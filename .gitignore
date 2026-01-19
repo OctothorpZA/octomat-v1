@@ -21,7 +21,11 @@ yarn-error.log
 /.nova
 /.zed
 
+# Ignore archive directories
+/.archive
+
 # Ignore IDE specific directories
+/.gemini
 /.vscode
 
 # Ignore vendor directory
@@ -33,3 +37,11 @@ yarn-error.log
 .env.backup
 .env.production
 .env.bak
+
+# Ignore specific files
+.mcp.json
+!AGENTS.md
+boost.json
+!CLAUDE.md
+GEMINI.md
+opencode.json
