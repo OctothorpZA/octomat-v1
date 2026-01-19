@@ -1,13 +1,16 @@
 {
     "$schema": "https://getcomposer.org/schema.json",
-    "name": "laravel/react-starter-kit",
+    "name": "oitws/octomat",
     "type": "project",
     "description": "The skeleton application for the Laravel framework.",
     "keywords": [
         "laravel",
         "framework"
     ],
-    "license": "MIT",
+    "license": [
+        "proprietary",
+        "MIT"
+    ],
     "require": {
         "php": "^8.2",
         "inertiajs/inertia-laravel": "^2.0",
@@ -103,5 +106,17 @@
         }
     },
     "minimum-stability": "stable",
-    "prefer-stable": true
+    "prefer-stable": true,
+    "authors": [
+        {
+            "name": "Octothorp (PTY) Ltd.",
+            "email": "octomat@octothorp.co.za",
+            "homepage": "https://octothorp.co.za"
+        },
+        {
+            "name": "Mansoer Gallie",
+            "role": "System Architect"
+        }
+    ],
+    "homepage": "https://mat.oitw.site"
 }
