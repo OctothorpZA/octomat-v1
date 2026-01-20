@@ -24,7 +24,12 @@ class UserFactory extends Factory
     public function definition(): array
     {
         return [
-            'name' => fake()->name(),
+            'first_name' => fake()->firstName(),
+            // Old Version // 'middle_names' => fake()->boolean(30) ? fake()->firstName() : null, // 30% chance of middle name
+            'middle_names' => fake()->optional(0.3)->firstName(), // 30% chance of having middle name
+            'last_name' => fake()->lastName(),
+            // Old Version // 'date_of_birth' => fake()->dateTimeBetween('-80 years', '-13 years')->format('Y-m-d'), // 13-80 years old
+            'date_of_birth' => fake()->optional(0.7)->date('Y-m-d', '-70 years', '-13 years'), // 70% chance for realistic age range
             'email' => fake()->unique()->safeEmail(),
             'email_verified_at' => now(),
             'password' => static::$password ??= Hash::make('password'),
@@ -42,6 +47,16 @@ class UserFactory extends Factory
     {
         return $this->state(fn (array $attributes) => [
             'email_verified_at' => null,
+        ]);
+    }
+
+    /**
+     * Indicate that the user is a minor (under 18).
+     */
+    public function minor(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'date_of_birth' => fake()->dateTimeBetween('-17 years', '-13 years')->format('Y-m-d'),
         ]);
     }
 

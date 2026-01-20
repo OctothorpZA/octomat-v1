@@ -31,7 +31,11 @@ export interface SharedData {
 
 export interface User {
     id: number;
-    name: string;
+    name: string; // Backward compatibility accessor
+    first_name: string;
+    middle_names?: string | null;
+    last_name: string;
+    date_of_birth?: string | null;
     email: string;
     avatar?: string;
     email_verified_at: string | null;
