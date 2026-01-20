@@ -26,20 +26,80 @@ export default function Register() {
                 {({ processing, errors }) => (
                     <>
                         <div className="grid gap-6">
+                            {/* Name fields side-by-side on larger screens */}
+                            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                                <div className="grid gap-2">
+                                    <Label htmlFor="first_name">Name</Label>
+                                    <Input
+                                        id="first_name"
+                                        type="text"
+                                        required
+                                        autoFocus
+                                        tabIndex={1}
+                                        autoComplete="given-name"
+                                        name="first_name"
+                                        placeholder="First name"
+                                    />
+                                    <InputError
+                                        message={errors.first_name}
+                                        className="mt-2"
+                                    />
+                                </div>
+
+                                <div className="grid gap-2">
+                                    <Label htmlFor="last_name">Surname</Label>
+                                    <Input
+                                        id="last_name"
+                                        type="text"
+                                        required
+                                        tabIndex={2}
+                                        autoComplete="family-name"
+                                        name="last_name"
+                                        placeholder="Last name"
+                                    />
+                                    <InputError
+                                        message={errors.last_name}
+                                        className="mt-2"
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Middle names full width */}
                             <div className="grid gap-2">
-                                <Label htmlFor="name">Name</Label>
+                                <Label htmlFor="middle_names">
+                                    Middle Names{' '}
+                                    <span className="text-muted-foreground">
+                                        (optional)
+                                    </span>
+                                </Label>
                                 <Input
-                                    id="name"
+                                    id="middle_names"
                                     type="text"
-                                    required
-                                    autoFocus
-                                    tabIndex={1}
-                                    autoComplete="name"
-                                    name="name"
-                                    placeholder="Full name"
+                                    tabIndex={3}
+                                    autoComplete="additional-name"
+                                    name="middle_names"
+                                    placeholder="Middle names"
                                 />
                                 <InputError
-                                    message={errors.name}
+                                    message={errors.middle_names}
+                                    className="mt-2"
+                                />
+                            </div>
+
+                            <div className="grid gap-2">
+                                <Label htmlFor="date_of_birth">
+                                    Date of Birth
+                                </Label>
+                                <Input
+                                    id="date_of_birth"
+                                    type="date"
+                                    required
+                                    tabIndex={4}
+                                    name="date_of_birth"
+                                    max={new Date().toISOString().split('T')[0]}
+                                />
+                                <InputError
+                                    message={errors.date_of_birth}
                                     className="mt-2"
                                 />
                             </div>
@@ -50,7 +110,7 @@ export default function Register() {
                                     id="email"
                                     type="email"
                                     required
-                                    tabIndex={2}
+                                    tabIndex={5}
                                     autoComplete="email"
                                     name="email"
                                     placeholder="email@example.com"
@@ -64,7 +124,7 @@ export default function Register() {
                                     id="password"
                                     type="password"
                                     required
-                                    tabIndex={3}
+                                    tabIndex={6}
                                     autoComplete="new-password"
                                     name="password"
                                     placeholder="Password"
@@ -80,7 +140,7 @@ export default function Register() {
                                     id="password_confirmation"
                                     type="password"
                                     required
-                                    tabIndex={4}
+                                    tabIndex={7}
                                     autoComplete="new-password"
                                     name="password_confirmation"
                                     placeholder="Confirm password"
@@ -103,7 +163,7 @@ export default function Register() {
 
                         <div className="text-center text-sm text-muted-foreground">
                             Already have an account?{' '}
-                            <TextLink href={login()} tabIndex={6}>
+                            <TextLink href={login()} tabIndex={8}>
                                 Log in
                             </TextLink>
                         </div>

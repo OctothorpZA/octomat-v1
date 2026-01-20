@@ -52,22 +52,93 @@ export default function Profile({
                     >
                         {({ processing, recentlySuccessful, errors }) => (
                             <>
+                                <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                                    <div className="grid gap-2">
+                                        <Label htmlFor="first_name">
+                                            First name
+                                        </Label>
+                                        <Input
+                                            id="first_name"
+                                            className="mt-1 block w-full"
+                                            defaultValue={auth.user.first_name}
+                                            name="first_name"
+                                            required
+                                            autoComplete="given-name"
+                                            placeholder="First name"
+                                        />
+                                        <InputError
+                                            className="mt-2"
+                                            message={errors.first_name}
+                                        />
+                                    </div>
+
+                                    <div className="grid gap-2">
+                                        <Label htmlFor="middle_names">
+                                            Middle names
+                                        </Label>
+                                        <Input
+                                            id="middle_names"
+                                            className="mt-1 block w-full"
+                                            defaultValue={
+                                                auth.user.middle_names || ''
+                                            }
+                                            name="middle_names"
+                                            autoComplete="additional-name"
+                                            placeholder="Middle names (optional)"
+                                        />
+                                        <InputError
+                                            className="mt-2"
+                                            message={errors.middle_names}
+                                        />
+                                    </div>
+
+                                    <div className="grid gap-2">
+                                        <Label htmlFor="date_of_birth">
+                                            Date of Birth
+                                        </Label>
+                                        <Input
+                                            id="date_of_birth"
+                                            type="date"
+                                            className="mt-1 block w-full"
+                                            defaultValue={
+                                                auth.user.date_of_birth
+                                                    ? new Date(
+                                                          auth.user
+                                                              .date_of_birth,
+                                                      )
+                                                          .toISOString()
+                                                          .split('T')[0]
+                                                    : ''
+                                            }
+                                            name="date_of_birth"
+                                            autoComplete="bday"
+                                            placeholder="Date of birth"
+                                        />
+                                        <InputError
+                                            className="mt-2"
+                                            message={errors.date_of_birth}
+                                        />
+                                    </div>
+                                </div>
+
                                 <div className="grid gap-2">
-                                    <Label htmlFor="name">Name</Label>
-
+                                    <Label htmlFor="date_of_birth">
+                                        Date of birth
+                                    </Label>
                                     <Input
-                                        id="name"
+                                        id="date_of_birth"
+                                        type="date"
                                         className="mt-1 block w-full"
-                                        defaultValue={auth.user.name}
-                                        name="name"
-                                        required
-                                        autoComplete="name"
-                                        placeholder="Full name"
+                                        defaultValue={
+                                            auth.user.date_of_birth || ''
+                                        }
+                                        name="date_of_birth"
+                                        autoComplete="bday"
+                                        placeholder="Date of birth"
                                     />
-
                                     <InputError
                                         className="mt-2"
-                                        message={errors.name}
+                                        message={errors.date_of_birth}
                                     />
                                 </div>
 
