@@ -7,6 +7,7 @@
 - **Feature Tests**: `tests/Feature/` - Test complete user workflows
 - **Unit Tests**: `tests/Unit/` - Test individual classes/methods
 - **Browser Tests**: `tests/Browser/` (future) - E2E browser testing with Pest
+- **JavaScript Tests**: `resources/js/hooks/__tests__/` - React hook testing with Vitest
 
 ### Test Files Structure
 
@@ -201,6 +202,49 @@ $unverifiedUser = User::factory()->unverified()->create();
 </phpunit>
 ```
 
+## JavaScript Testing with Vitest
+
+### Setup
+
+- **Framework**: Vitest with React Testing Library
+- **Configuration**: `vitest.config.ts` with jsdom environment
+- **Location**: `resources/js/hooks/__tests__/*.test.tsx`
+
+### Example Hook Test
+
+```typescript
+import { renderHook } from '@testing-library/react';
+import { describe, it, expect } from 'vitest';
+import { useInitials } from '../use-initials';
+
+describe('useInitials', () => {
+    it('should return the initials for a standard two-word name', () => {
+        const { result } = renderHook(() => useInitials());
+        const getInitials = result.current;
+        expect(getInitials('John Doe')).toBe('JD');
+    });
+
+    it('should handle undefined input gracefully', () => {
+        const { result } = renderHook(() => useInitials());
+        expect(result.current(undefined)).toBe('');
+    });
+});
+```
+
+### JavaScript Test Commands
+
+```bash
+# Run JavaScript tests
+npm run test:run
+npm run test
+
+# Run with UI
+npm run test:ui
+
+# Run specific test file
+npx vitest resources/js/hooks/__tests__/use-initials.test.tsx
+```
+
 ## Running Tests
 
 ### Commands
@@ -209,6 +253,9 @@ $unverifiedUser = User::factory()->unverified()->create();
 # Run all tests
 composer run test
 php artisan test --compact
+
+# Run JavaScript tests
+npm run test:run
 
 # Run specific test file
 php artisan test --compact tests/Feature/DashboardTest.php

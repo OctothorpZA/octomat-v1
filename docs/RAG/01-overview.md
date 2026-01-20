@@ -7,6 +7,7 @@ Octomat is a modern Laravel 12 application built with React 19, Inertia.js 2, an
 ## Core Features
 
 - **User Authentication**: Complete auth system with Laravel Fortify
+- **Structured User Profiles**: first_name, middle_names, last_name, date_of_birth fields
 - **Email Verification**: User email verification workflow
 - **Two-Factor Authentication**: QR code-based 2FA with recovery codes
 - **Profile Management**: User profile editing and account deletion
@@ -22,7 +23,7 @@ Octomat is a modern Laravel 12 application built with React 19, Inertia.js 2, an
 - **SPA Framework**: Inertia.js 2.0.19
 - **Database**: PostgreSQL
 - **Authentication**: Laravel Fortify 1.33.0
-- **Testing**: Pest 4.3.1
+- **Testing**: Pest 4.3.1, Vitest 4.0.17 (JavaScript)
 - **Code Quality**: Laravel Pint 1.27.0, ESLint 9.39.2, Prettier 3.8.0
 
 ## Architecture Patterns
