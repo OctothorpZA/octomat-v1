@@ -9,11 +9,13 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Str;
 use Laravel\Fortify\TwoFactorAuthenticatable;
+use Spatie\Permission\Models\Role;
+use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable, SoftDeletes, TwoFactorAuthenticatable;
+    use HasFactory, HasRoles, Notifiable, SoftDeletes, TwoFactorAuthenticatable;
 
     /**
      * The attributes that are mass assignable.
@@ -143,5 +145,51 @@ class User extends Authenticatable
         $age = $this->getAgeAttribute();
 
         return $age !== null && $age < 18;
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Role Helper Methods
+    |--------------------------------------------------------------------------
+    */
+
+    /**
+     * Custom helper methods for role management
+     */
+    public function getHighestRoleLevel(): int
+    {
+        return $this->roles()->max('level') ?? 300;
+    }
+
+    public function getPrimaryRole(): ?Role
+    {
+        return $this->roles()
+            ->orderByDesc('level')
+            ->first();
+    }
+
+    /**
+     * Auto-assign default role
+     */
+    protected static function booted(): void
+    {
+        static::created(function (User $user) {
+            // Guard against seeder not running yet (safer approach)
+            if (!$user->roles()->exists()) {
+                $role = \Spatie\Permission\Models\Role::firstOrCreate(['name' => 'General User']);
+                $user->assignRole($role);
+            }
+        });
+    }
+
+    /**
+     * Add fallback role creation to prevent roleless users
+     */
+    protected function assignDefaultRole(): void
+    {
+        if (!$this->roles()->exists()) {
+            $role = \Spatie\Permission\Models\Role::firstOrCreate(['name' => 'General User']);
+            $this->assignRole($role);
+        }
     }
 }
