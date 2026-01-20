@@ -22,5 +22,9 @@ class DatabaseSeeder extends Seeder
             'date_of_birth' => '1990-01-01',
             'email' => 'test@example.com',
         ]);
+
+        $this->call([
+            RoleSeeder::class,
+        ]);
     }
 }
