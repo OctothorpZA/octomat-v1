@@ -11,6 +11,9 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import AppLayout from '@/layouts/app-layout';
+import { assign } from '@/routes/admin/roles';
+import { type BreadcrumbItem } from '@/types';
 
 interface User {
     id: number;
@@ -34,14 +37,30 @@ export default function RoleAssignment({
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        post('/admin/roles/assign');
+        post(assign().url);
     };
 
+    const breadcrumbs: BreadcrumbItem[] = [
+        {
+            title: 'Admin',
+            href: '/admin',
+        },
+        {
+            title: 'Role Assignment',
+            href: assign().url,
+        },
+    ];
+
     return (
-        <>
+        <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Role Assignment" />
-            <div className="container mx-auto px-4 py-8">
-                <h1 className="mb-6 text-2xl font-bold">Role Assignment</h1>
+            <div className="space-y-6">
+                <div>
+                    <h1 className="text-2xl font-bold">Role Assignment</h1>
+                    <p className="text-muted-foreground">
+                        Assign roles to users in the system.
+                    </p>
+                </div>
 
                 <Card className="max-w-md">
                     <CardHeader>
@@ -116,6 +135,6 @@ export default function RoleAssignment({
                     </CardContent>
                 </Card>
             </div>
-        </>
+        </AppLayout>
     );
 }
