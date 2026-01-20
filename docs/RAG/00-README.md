@@ -18,10 +18,16 @@ This directory contains comprehensive Retrieval-Augmented Generation (RAG) docum
 
 ## Key Features Documented
 
+- **Role-Based Access Control**: Enterprise-grade RBAC with hierarchical permissions
+- **Admin Interfaces**: Protected role assignment system for administrators
+- **Security**: Privilege escalation prevention and secure role management
+
 ### Backend (Laravel 12 + PHP 8.5)
 
 - MVC architecture with Inertia.js SPA enhancement
-- Laravel Fortify authentication system
+- Laravel Fortify authentication system with RBAC
+- Spatie Laravel Permission for role-based access control
+- 11-tier hierarchical role system (100-1000 level)
 - Form request validation patterns
 - Eloquent ORM with PostgreSQL
 - Queue system for background jobs
@@ -114,6 +120,8 @@ npm run build
 - Two-factor authentication
 - Profile management
 - Account deletion
+- Role-based access control
+- Admin role assignment interface
 
 ## Contributing
 
@@ -136,7 +144,7 @@ When adding new features:
 
 ### Potential Features
 
-- User roles and permissions
+- Advanced role hierarchies and custom permissions
 - Social authentication
 - User profiles with avatars
 - Activity logging and audit trails

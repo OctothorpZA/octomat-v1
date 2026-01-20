@@ -25,6 +25,10 @@ Main application pages rendered by Inertia.js.
 - `settings/appearance.tsx` - Theme settings
 - `settings/two-factor.tsx` - 2FA management
 
+#### Admin Pages
+
+- `admin/role-assignment.tsx` - Role assignment interface for administrators
+
 ### Layouts (`resources/js/layouts/`)
 
 Reusable layout components.

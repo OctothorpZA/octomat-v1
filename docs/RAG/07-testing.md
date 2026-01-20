@@ -14,6 +14,8 @@
 ```
 tests/
 ├── Feature/
+│   ├── Admin/
+│   │   └── RoleTest.php
 │   ├── Auth/
 │   │   ├── AuthenticationTest.php
 │   │   ├── EmailVerificationTest.php
@@ -200,6 +202,50 @@ $unverifiedUser = User::factory()->unverified()->create();
         <env name="QUEUE_CONNECTION" value="sync"/>
     </php>
 </phpunit>
+```
+
+### RBAC Testing Patterns
+
+```php
+test('role assignment requires proper permissions', function () {
+    $user = User::factory()->create();
+    $targetUser = User::factory()->create();
+    $role = Role::create(['name' => 'Manager']);
+
+    // Test unauthorized access
+    $this->actingAs($user)
+        ->get(route('admin.roles.assign'))
+        ->assertForbidden();
+
+    // Test with proper permissions
+    $user->assignRole('Super Admin');
+
+    $this->actingAs($user)
+        ->get(route('admin.roles.assign'))
+        ->assertOk();
+});
+
+test('role assignment validates input', function () {
+    $admin = User::factory()->create()->assignRole('Super Admin');
+
+    $this->actingAs($admin)
+        ->post(route('admin.roles.assign.post'), [
+            'user_id' => 999, // Non-existent user
+            'role_id' => 999, // Non-existent role
+        ])
+        ->assertSessionHasErrors(['user_id', 'role_id']);
+});
+
+test('users cannot assign roles to themselves', function () {
+    $user = User::factory()->create()->assignRole('Super Admin');
+
+    $this->actingAs($user)
+        ->post(route('admin.roles.assign.post'), [
+            'user_id' => $user->id, // Self-assignment attempt
+            'role_id' => Role::first()->id,
+        ])
+        ->assertSessionHasErrors('user_id');
+});
 ```
 
 ## JavaScript Testing with Vitest

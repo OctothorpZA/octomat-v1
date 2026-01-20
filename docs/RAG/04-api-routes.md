@@ -27,6 +27,20 @@ Route::middleware(['auth', 'verified'])->group(function () {
 require __DIR__.'/settings.php';
 ```
 
+### Admin Routes (`routes/web.php`)
+
+```php
+// Admin routes with RBAC protection
+Route::middleware(['auth'])->prefix('admin')->group(function () {
+    Route::get('/roles/assign', [RoleAssignmentController::class, 'index'])
+        ->name('admin.roles.assign')
+        ->middleware('can:assign-roles'); // Custom gate for role assignment access
+    Route::post('/roles/assign', [RoleAssignmentController::class, 'assign'])
+        ->name('admin.roles.assign.post')
+        ->middleware('can:assign-roles');
+});
+```
+
 ### Settings Routes (`routes/settings.php`)
 
 ```php
@@ -103,6 +117,31 @@ public function update(ProfileUpdateRequest $request): RedirectResponse
 
 - `show(): Response` - Show 2FA settings page
 
+### RoleAssignmentController
+
+**Location**: `app/Http/Controllers/Admin/RoleAssignmentController.php`
+
+#### Methods
+
+- `index(): Response` - Show role assignment interface with users and available roles
+- `assign(RoleAssignmentRequest $request): RedirectResponse` - Assign role to user with validation
+
+#### Key Logic
+
+```php
+public function assign(RoleAssignmentRequest $request): RedirectResponse
+{
+    $user = User::findOrFail($request->user_id);
+    $role = Role::findOrFail($request->role_id);
+
+    // Remove existing roles and assign new one
+    $user->syncRoles([$role]);
+
+    return to_route('admin.roles.assign')
+        ->with('success', "Role '{$role->name}' assigned to {$user->full_name} successfully.");
+}
+```
+
 ## Form Requests
 
 ### ProfileUpdateRequest
@@ -131,6 +170,27 @@ Validates account deletion:
 
 - `password`: required, current_password
 
+### RoleAssignmentRequest
+
+**Location**: `app/Http/Requests/Admin/RoleAssignmentRequest.php`
+
+Validates role assignment operations:
+
+- `user_id`: required, exists in users table, different from current user
+- `role_id`: required, exists in roles table, valid role permissions
+
+#### Custom Validation Rules
+
+```php
+protected function prepareForValidation(): void
+{
+    // Prevent users from modifying their own roles
+    if ($this->user_id == $this->user()->id) {
+        $this->validator->errors()->add('user_id', 'You cannot modify your own role assignment.');
+    }
+}
+```
+
 ## Middleware Usage
 
 - `auth`: Requires authentication
@@ -155,11 +215,17 @@ All routes return Inertia responses that render React components:
 - `user-password.update` - Password update action
 - `appearance.edit` - Appearance settings page
 - `two-factor.show` - 2FA settings page
+- `admin.roles.assign` - Role assignment page
+- `admin.roles.assign.post` - Role assignment action
 
 ## Security Features
 
 - CSRF protection on all forms
 - Rate limiting on sensitive operations
 - Email verification requirements
-- Password confirmation for destructive actions</content>
+- Password confirmation for destructive actions
+- Role-based access control (RBAC) with hierarchical permissions
+- Privilege escalation prevention (users cannot modify their own roles)
+- Admin route protection with `can:assign-roles` middleware gate
+- Hierarchical role system (100-1000 level) preventing unauthorized access</content>
   <parameter name="filePath">docs/RAG/api-routes.md

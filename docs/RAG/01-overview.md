@@ -7,6 +7,8 @@ Octomat is a modern Laravel 12 application built with React 19, Inertia.js 2, an
 ## Core Features
 
 - **User Authentication**: Complete auth system with Laravel Fortify
+- **Role-Based Access Control (RBAC)**: Enterprise-grade permission system with 11 hierarchical roles (100-1000 level)
+- **Admin Role Assignment**: Protected admin interface for user role management
 - **Structured User Profiles**: first_name, middle_names, last_name, date_of_birth fields
 - **Email Verification**: User email verification workflow
 - **Two-Factor Authentication**: QR code-based 2FA with recovery codes

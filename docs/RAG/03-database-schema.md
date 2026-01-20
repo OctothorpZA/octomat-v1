@@ -133,9 +133,92 @@ CREATE TABLE jobs (
 
 Standard Laravel cache table structure for application caching.
 
+## Role-Based Access Control (RBAC) Tables
+
+### Roles Table
+
+```sql
+CREATE TABLE roles (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(255) UNIQUE NOT NULL,
+    guard_name VARCHAR(255) NOT NULL DEFAULT 'web',
+    created_at TIMESTAMP NULL,
+    updated_at TIMESTAMP NULL
+);
+```
+
+### Permissions Table
+
+```sql
+CREATE TABLE permissions (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(255) UNIQUE NOT NULL,
+    guard_name VARCHAR(255) NOT NULL DEFAULT 'web',
+    created_at TIMESTAMP NULL,
+    updated_at TIMESTAMP NULL
+);
+```
+
+### Model Has Permissions Table
+
+```sql
+CREATE TABLE model_has_permissions (
+    permission_id BIGINT UNSIGNED NOT NULL,
+    model_type VARCHAR(255) NOT NULL,
+    model_id BIGINT UNSIGNED NOT NULL,
+    PRIMARY KEY (permission_id, model_id, model_type),
+    FOREIGN KEY (permission_id) REFERENCES permissions(id) ON DELETE CASCADE
+);
+```
+
+### Model Has Roles Table
+
+```sql
+CREATE TABLE model_has_roles (
+    role_id BIGINT UNSIGNED NOT NULL,
+    model_type VARCHAR(255) NOT NULL,
+    model_id BIGINT UNSIGNED NOT NULL,
+    PRIMARY KEY (role_id, model_id, model_type),
+    FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE
+);
+```
+
+### Role Has Permissions Table
+
+```sql
+CREATE TABLE role_has_permissions (
+    permission_id BIGINT UNSIGNED NOT NULL,
+    role_id BIGINT UNSIGNED NOT NULL,
+    PRIMARY KEY (permission_id, role_id),
+    FOREIGN KEY (permission_id) REFERENCES permissions(id) ON DELETE CASCADE,
+    FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE
+);
+```
+
+## RBAC Models
+
+### Role Model
+
+**Location**: `Spatie\Permission\Models\Role`
+
+- Manages role definitions and permissions
+- Supports guard-based permissions
+- Includes timestamps for auditing
+
+### Permission Model
+
+**Location**: `Spatie\Permission\Models\Permission`
+
+- Manages individual permissions
+- Guard-based permission scoping
+- Timestamps for audit trail
+
 ## Relationships
 
-- **User**: Central model with no explicit relationships defined yet
+- **User**: Central model with RBAC relationships through Spatie Permission package
+- **User ↔ Roles**: Many-to-many relationship (users can have multiple roles)
+- **User ↔ Permissions**: Many-to-many relationship (users can have direct permissions)
+- **Role ↔ Permissions**: Many-to-many relationship (roles contain permissions)
 - All authentication-related functionality is handled through Laravel Fortify
 
 ## Factories
