@@ -72,7 +72,7 @@ class User extends Authenticatable
     */
 
     /**
-     * Get the user's full name (backward compatibility).
+     * Get the user's full name (backward compatibility - First + Last only).
      */
     public function getNameAttribute(): string
     {
@@ -175,7 +175,7 @@ class User extends Authenticatable
     {
         static::created(function (User $user) {
             // Guard against seeder not running yet (safer approach)
-            if (!$user->roles()->exists()) {
+            if (! $user->roles()->exists()) {
                 $role = \Spatie\Permission\Models\Role::firstOrCreate(['name' => 'General User']);
                 $user->assignRole($role);
             }
@@ -187,7 +187,7 @@ class User extends Authenticatable
      */
     protected function assignDefaultRole(): void
     {
-        if (!$this->roles()->exists()) {
+        if (! $this->roles()->exists()) {
             $role = \Spatie\Permission\Models\Role::firstOrCreate(['name' => 'General User']);
             $this->assignRole($role);
         }

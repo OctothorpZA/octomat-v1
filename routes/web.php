@@ -18,11 +18,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
 use App\Http\Controllers\Admin\RoleAssignmentController;
 
-Route::middleware(['auth', 'role:Super Admin'])->prefix('admin')->group(function () {
+Route::middleware(['auth'])->prefix('admin')->group(function () {
     Route::get('/roles/assign', [RoleAssignmentController::class, 'index'])
-        ->name('admin.roles.assign');
+        ->name('admin.roles.assign')
+        ->middleware('can:assign-roles'); // Custom gate for role assignment access
     Route::post('/roles/assign', [RoleAssignmentController::class, 'assign'])
-        ->name('admin.roles.assign.post');
+        ->name('admin.roles.assign.post')
+        ->middleware('can:assign-roles');
 });
 
 require __DIR__.'/settings.php';

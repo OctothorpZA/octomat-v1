@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use Spatie\Permission\Models\Role;
 
 class RoleAssignmentController extends Controller
 {
@@ -35,15 +36,35 @@ class RoleAssignmentController extends Controller
     {
         $validated = $request->validate([
             'selectedUser' => 'required|exists:users,id',
-            'selectedRole' => 'required|string',
+            'selectedRole' => 'required|string|exists:roles,name',
         ]);
 
-        // Add: Prevent privilege escalation
-        if (!$request->user()->hasRole('Super Admin')) {
-            return back()->withErrors(['authorization' => 'Insufficient permissions']);
+        // Advanced validation rules
+        $user = User::find($validated['selectedUser']);
+        $role = Role::where('name', $validated['selectedRole'])->first();
+
+        // Prevent self-assignment of high-level roles (Super Admin and above)
+        if ($request->user()->id === $user->id && $role->level >= 900) {
+            return back()->withErrors(['authorization' => 'Cannot assign high-level administrative roles to yourself']);
         }
 
-        $user = User::find($validated['selectedUser']);
+        // Check role level hierarchy (assignee cannot assign higher-level roles)
+        if ($request->user()->getHighestRoleLevel() <= $role->level && ! $request->user()->hasRole('Super Admin')) {
+            return back()->withErrors(['authorization' => 'Cannot assign roles at or above your authority level']);
+        }
+
+        // Check for existing conflicting roles (prevent similar level assignments)
+        $conflictingRoles = $user->roles->filter(function ($existingRole) use ($role) {
+            return abs($existingRole->level - $role->level) < 100 && $existingRole->name !== $role->name;
+        });
+
+        if ($conflictingRoles->isNotEmpty()) {
+            $conflictNames = $conflictingRoles->pluck('display_name')->join(', ');
+
+            return back()->withErrors(['conflict' => "Cannot assign this role. User already has conflicting roles: {$conflictNames}"]);
+        }
+
+        // Execute role assignment
         $user->syncRoles([$validated['selectedRole']]);
 
         return redirect()->back()->with('success', 'Role assigned successfully!');

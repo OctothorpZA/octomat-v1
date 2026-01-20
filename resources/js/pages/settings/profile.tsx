@@ -44,7 +44,8 @@ export default function Profile({
                     />
 
                     <Form
-                        {...ProfileController.update.form()}
+                        action={ProfileController.update.url()}
+                        method="patch"
                         options={{
                             preserveScroll: true,
                         }}
@@ -93,30 +94,21 @@ export default function Profile({
                                     </div>
 
                                     <div className="grid gap-2">
-                                        <Label htmlFor="date_of_birth">
-                                            Date of Birth
+                                        <Label htmlFor="last_name">
+                                            Last name
                                         </Label>
                                         <Input
-                                            id="date_of_birth"
-                                            type="date"
+                                            id="last_name"
                                             className="mt-1 block w-full"
-                                            defaultValue={
-                                                auth.user.date_of_birth
-                                                    ? new Date(
-                                                          auth.user
-                                                              .date_of_birth,
-                                                      )
-                                                          .toISOString()
-                                                          .split('T')[0]
-                                                    : ''
-                                            }
-                                            name="date_of_birth"
-                                            autoComplete="bday"
-                                            placeholder="Date of birth"
+                                            defaultValue={auth.user.last_name}
+                                            name="last_name"
+                                            required
+                                            autoComplete="family-name"
+                                            placeholder="Last name"
                                         />
                                         <InputError
                                             className="mt-2"
-                                            message={errors.date_of_birth}
+                                            message={errors.last_name}
                                         />
                                     </div>
                                 </div>
@@ -130,7 +122,13 @@ export default function Profile({
                                         type="date"
                                         className="mt-1 block w-full"
                                         defaultValue={
-                                            auth.user.date_of_birth || ''
+                                            auth.user.date_of_birth
+                                                ? new Date(
+                                                      auth.user.date_of_birth,
+                                                  )
+                                                      .toISOString()
+                                                      .split('T')[0]
+                                                : ''
                                         }
                                         name="date_of_birth"
                                         autoComplete="bday"
