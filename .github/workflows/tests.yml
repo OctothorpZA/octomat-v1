@@ -16,7 +16,7 @@ jobs:
     strategy:
       matrix:
         php-version: ['8.4', '8.5']
-        node-version: [18.x, 20.x, 22.x, 24.x]
+        node-version: ['22.x', '24.x']
     environment: Testing
 
     services:
