@@ -1,4 +1,4 @@
-import { InertiaLinkProps } from '@inertiajs/react';
+import { InertiaLinkProps, InertiaSharedProps } from '@inertiajs/react';
 import { LucideIcon } from 'lucide-react';
 
 export interface Auth {
@@ -22,11 +22,24 @@ export interface NavItem {
     isActive?: boolean;
 }
 
-export interface SharedData {
+export interface ImpersonationData {
+    isImpersonating: boolean;
+    originalUser: User | null;
+}
+
+export interface SharedData extends InertiaSharedProps {
     name: string;
     auth: Auth;
+    impersonate: ImpersonationData;
     sidebarOpen: boolean;
     [key: string]: unknown;
+}
+
+// Extend Inertia's shared props to include our impersonation data
+declare module '@inertiajs/react' {
+    interface InertiaSharedProps {
+        impersonate?: ImpersonationData;
+    }
 }
 
 export interface User {

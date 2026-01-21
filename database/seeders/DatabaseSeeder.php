@@ -15,16 +15,17 @@ class DatabaseSeeder extends Seeder
     {
         // User::factory(10)->create();
 
-        User::factory()->create([
-            'first_name' => 'Test',
-            // 'middle_names' => null,
-            'last_name' => 'User',
-            'date_of_birth' => '1990-01-01',
-            'email' => 'test@example.com',
-        ]);
+        // User::factory()->create([
+        //     'first_name' => 'Test',
+        //     // 'middle_names' => null,
+        //     'last_name' => 'User',
+        //     'date_of_birth' => '1990-01-01',
+        //     'email' => 'test@example.com',
+        // ]);
 
         $this->call([
             RoleSeeder::class,
+            DemoSeeder::class,
         ]);
     }
 }

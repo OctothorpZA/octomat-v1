@@ -5,8 +5,11 @@ namespace App\Providers;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
+use Mirror\Events\ImpersonationStarted;
+use Mirror\Events\ImpersonationStopped;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -24,6 +27,7 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->configureDefaults();
+        $this->configureImpersonationEvents();
     }
 
     protected function configureDefaults(): void
@@ -43,5 +47,37 @@ class AppServiceProvider extends ServiceProvider
                 ->uncompromised()
             : null
         );
+    }
+
+    protected function configureImpersonationEvents(): void
+    {
+        // Mirror impersonation events for audit logging
+        Event::listen(ImpersonationStarted::class, function (ImpersonationStarted $event) {
+            // Log impersonation start for audit trail
+            logger()->info('User impersonation started', [
+                'impersonator_id' => $event->impersonator->id,
+                'impersonator_email' => $event->impersonator->email,
+                'impersonated_id' => $event->impersonated->id,
+                'impersonated_email' => $event->impersonated->email,
+                'guard' => $event->guardName,
+                'timestamp' => now()->toISOString(),
+            ]);
+
+            // TODO: Sprint 4 - Store in audit log database table
+        });
+
+        Event::listen(ImpersonationStopped::class, function (ImpersonationStopped $event) {
+            // Log impersonation stop for audit trail
+            logger()->info('User impersonation stopped', [
+                'impersonator_id' => $event->impersonator->id,
+                'impersonator_email' => $event->impersonator->email,
+                'impersonated_id' => $event->impersonated->id,
+                'impersonated_email' => $event->impersonated->email,
+                'guard' => $event->guardName,
+                'timestamp' => now()->toISOString(),
+            ]);
+
+            // TODO: Sprint 4 - Store in audit log database table
+        });
     }
 }
