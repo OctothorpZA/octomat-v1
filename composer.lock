@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "380f5ca8a9b19b4d929e2f15d3f7b2cd",
+    "content-hash": "98b1bf385b41add09c43243051942af1",
     "packages": [
         {
             "name": "bacon/bacon-qr-code",
@@ -612,6 +612,73 @@
                 }
             ],
             "time": "2025-03-06T22:45:56+00:00"
+        },
+        {
+            "name": "franbarbalopez/mirror",
+            "version": "v1.3.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/franbarbalopez/mirror.git",
+                "reference": "3809b19a651f6b234d53e9ae09b93a588a3ef817"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/franbarbalopez/mirror/zipball/3809b19a651f6b234d53e9ae09b93a588a3ef817",
+                "reference": "3809b19a651f6b234d53e9ae09b93a588a3ef817",
+                "shasum": ""
+            },
+            "require": {
+                "illuminate/support": "^11.0|^12.0",
+                "php": "^8.2"
+            },
+            "require-dev": {
+                "larastan/larastan": "^3.8.0",
+                "laravel/pint": "^1.26.0",
+                "orchestra/testbench": "^9.15.0|^10.8.0",
+                "pestphp/pest": "^3.8.4|^4.1.6",
+                "pestphp/pest-plugin-laravel": "^3.2.0|^4.0",
+                "pestphp/pest-plugin-type-coverage": "^3.6.1|^4.0.3",
+                "rector/rector": "^2.2.14"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "aliases": {
+                        "Mirror": "Mirror\\Facades\\Mirror"
+                    },
+                    "providers": [
+                        "Mirror\\MirrorServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Mirror\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Francisco José Barba López",
+                    "email": "franciscojose.barbalopez@gmail.com",
+                    "role": "Developer"
+                }
+            ],
+            "description": "Mirror is a Laravel package that handles user impersonation.",
+            "homepage": "https://github.com/franbarbalopez/mirror",
+            "keywords": [
+                "impersonate",
+                "impersonation",
+                "laravel"
+            ],
+            "support": {
+                "issues": "https://github.com/franbarbalopez/mirror/issues",
+                "source": "https://github.com/franbarbalopez/mirror/tree/v1.3.0"
+            },
+            "time": "2025-12-14T20:26:00+00:00"
         },
         {
             "name": "fruitcake/php-cors",

@@ -27,4 +27,15 @@ Route::middleware(['auth'])->prefix('admin')->group(function () {
         ->middleware('can:assign-roles');
 });
 
+// Mirror impersonation routes (protected)
+Route::middleware(['auth', 'verified'])->group(function () {
+    // Only super_admin can access these
+    Route::middleware(['role:super_admin', 'mirror.ttl'])->group(function () {
+        Route::post('/impersonate/{user}', [App\Http\Controllers\ImpersonationController::class, 'start'])
+            ->name('impersonate.start');
+        Route::post('/impersonate/stop', [App\Http\Controllers\ImpersonationController::class, 'stop'])
+            ->name('impersonate.stop');
+    });
+});
+
 require __DIR__.'/settings.php';
