@@ -25,10 +25,18 @@ tests/
 │   │   └── TwoFactorChallengeTest.php
 │   ├── DashboardTest.php
 │   ├── ExampleTest.php
+│   ├── ImpersonationTest.php
+│   ├── UnifiedDashboardTest.php
 │   └── Settings/
 │       ├── PasswordUpdateTest.php
 │       ├── ProfileUpdateTest.php
 │       └── TwoFactorAuthenticationTest.php
+├── js/
+│   ├── components/
+│   │   ├── Dashboard.test.tsx
+│   │   └── RoleAssignment.test.tsx
+│   └── hooks/
+│       └── use-debounce.test.ts
 ├── Unit/
 │   └── ExampleTest.php
 ├── TestCase.php

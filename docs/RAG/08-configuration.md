@@ -136,6 +136,70 @@ return [
 ];
 ```
 
+### config/laravel-impersonate.php
+
+Laravel Impersonate package configuration for secure admin user impersonation.
+
+```php
+<?php
+
+return [
+    /*
+    |--------------------------------------------------------------------------
+    | Take Route
+    |--------------------------------------------------------------------------
+    |
+    | The route that will be used to take impersonation.
+    |
+    */
+
+    'take_route' => [
+        'name' => 'impersonate',
+        'method' => 'POST',
+        'uri' => '/impersonate/{id}/{guardName?}',
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Leave Route
+    |--------------------------------------------------------------------------
+    |
+    | The route that will be used to leave impersonation.
+    |
+    */
+
+    'leave_route' => [
+        'name' => 'impersonate.leave',
+        'method' => 'POST',
+        'uri' => '/impersonate/leave',
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Impersonator Guard
+    |--------------------------------------------------------------------------
+    |
+    | The guard that will be used to authenticate the impersonator.
+    | This guard will be used to retrieve the impersonator user.
+    |
+    */
+
+    'impersonator_guard' => 'web',
+
+    /*
+    |--------------------------------------------------------------------------
+    | Impersonated Guard
+    |--------------------------------------------------------------------------
+    |
+    | The guard that will be used to authenticate the impersonated user.
+    | This guard will be used to retrieve the impersonated user.
+    |
+    */
+
+    'impersonated_guard' => 'web',
+];
+```
+
 ### config/database.php
 
 ```php

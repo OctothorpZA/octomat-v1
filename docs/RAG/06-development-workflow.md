@@ -117,9 +117,18 @@ php artisan test --compact
 
 # Run specific test file
 php artisan test --compact tests/Feature/DashboardTest.php
+php artisan test --compact tests/Feature/UnifiedDashboardTest.php
+php artisan test --compact tests/Feature/ImpersonationTest.php
+
+# Run dashboard-related tests
+php artisan test --compact --filter="dashboard"
+
+# Run impersonation tests
+php artisan test --compact --filter="impersonat"
 
 # Run specific test method
 php artisan test --compact --filter="authenticated users can visit the dashboard"
+php artisan test --compact --filter="super admin sees admin widgets on unified dashboard"
 
 # Run unit tests only
 php artisan test tests/Unit
@@ -135,6 +144,39 @@ php artisan test tests/Feature
 3. Run tests to verify
 4. Refactor if needed
 5. Run full test suite
+
+### Impersonation Testing Procedures
+
+**Manual Testing:**
+
+```bash
+# 1. Create test users (run in tinker)
+php artisan tinker
+User::factory()->create(['email' => 'admin@test.com']);
+User::factory()->create(['email' => 'user@test.com']);
+User::find(1)->assignRole('Super Admin'); // Adjust ID as needed
+
+# 2. Test impersonation flow
+# - Login as admin@test.com
+# - Navigate to /admin/roles/assign
+# - Click impersonate button on a user row
+# - Verify impersonation banner appears
+# - Test leaving impersonation via banner or API
+
+# 3. Verify security restrictions
+# - Try impersonating as non-admin user (should fail)
+# - Try impersonating Super Admin as Super Admin (should fail)
+```
+
+**Automated Testing:**
+
+```bash
+# Run impersonation-specific tests
+php artisan test --compact tests/Feature/ImpersonationTest.php
+
+# Test role-based impersonation access
+php artisan test --compact --filter="can impersonate"
+```
 
 ## Build & Deployment
 

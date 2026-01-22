@@ -19,7 +19,9 @@ This directory contains comprehensive Retrieval-Augmented Generation (RAG) docum
 ## Key Features Documented
 
 - **Role-Based Access Control**: Enterprise-grade RBAC with hierarchical permissions
-- **Admin Interfaces**: Protected role assignment system for administrators
+- **Unified Dashboard**: Role-aggregated widget system with dynamic content based on user permissions
+- **Admin Interfaces**: Protected role assignment system with advanced search and hierarchical validation
+- **User Impersonation**: Secure admin impersonation with audit trails and session management
 - **Security**: Privilege escalation prevention and secure role management
 
 ### Backend (Laravel 12 + PHP 8.5)

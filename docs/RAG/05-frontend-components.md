@@ -19,7 +19,7 @@ Main application pages rendered by Inertia.js.
 
 #### Main Application Pages
 
-- `dashboard.tsx` - User dashboard
+- `dashboard.tsx` - Unified role-based dashboard with dynamic widgets
 - `settings/profile.tsx` - Profile settings
 - `settings/password.tsx` - Password change
 - `settings/appearance.tsx` - Theme settings
@@ -27,7 +27,7 @@ Main application pages rendered by Inertia.js.
 
 #### Admin Pages
 
-- `admin/role-assignment.tsx` - Role assignment interface for administrators
+- `admin/role-assignment.tsx` - Advanced role assignment interface with search and pagination
 
 ### Layouts (`resources/js/layouts/`)
 
@@ -63,6 +63,7 @@ Shadcn/ui-based components with Tailwind CSS:
 - `card.tsx` - Card container component
 - `alert.tsx` - Alert/notification component
 - `skeleton.tsx` - Loading skeleton component
+- `table.tsx` - Data table component with sorting and pagination
 
 #### Feature Components
 
@@ -72,6 +73,7 @@ Shadcn/ui-based components with Tailwind CSS:
 - `icon.tsx` - Icon wrapper component
 - `heading.tsx` - Page heading component
 - `heading-small.tsx` - Section heading component
+- `impersonation-banner.tsx` - Admin impersonation status banner
 
 #### Authentication Components
 
@@ -156,6 +158,45 @@ export default function Dashboard() {
         </AppLayout>
     );
 }
+```
+
+## Custom Hooks
+
+### useDebounce Hook
+
+**Location**: `resources/js/hooks/use-debounce.ts`
+
+Custom hook for debouncing user input to reduce API calls and improve performance.
+
+```tsx
+import { useEffect, useState } from 'react';
+
+export function useDebounce<T>(value: T, delay: number): T {
+    const [debouncedValue, setDebouncedValue] = useState<T>(value);
+
+    useEffect(() => {
+        const handler = setTimeout(() => {
+            setDebouncedValue(value);
+        }, delay);
+
+        return () => {
+            clearTimeout(handler);
+        };
+    }, [value, delay]);
+
+    return debouncedValue;
+}
+```
+
+**Usage**:
+
+```tsx
+const [search, setSearch] = useState('');
+const debouncedSearch = useDebounce(search, 300); // 300ms delay
+
+useEffect(() => {
+    router.get('/search', { q: debouncedSearch });
+}, [debouncedSearch]);
 ```
 
 ## Styling Patterns

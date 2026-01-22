@@ -19,9 +19,7 @@ Route::get('/', function () {
 
 // Authenticated routes
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::get('dashboard', function () {
-        return Inertia::render('dashboard');
-    })->name('dashboard');
+    Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
 });
 
 require __DIR__.'/settings.php';
@@ -38,6 +36,17 @@ Route::middleware(['auth'])->prefix('admin')->group(function () {
     Route::post('/roles/assign', [RoleAssignmentController::class, 'assign'])
         ->name('admin.roles.assign.post')
         ->middleware('can:assign-roles');
+});
+
+// Impersonation routes (protected by role middleware)
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::middleware('role:Super Admin')->group(function () {
+        Route::post('/impersonate/take/{id}/{guardName?}', [Lab404\Impersonate\Controllers\ImpersonateController::class, 'take'])
+            ->name('impersonate');
+    });
+
+    Route::post('/impersonate/leave', [Lab404\Impersonate\Controllers\ImpersonateController::class, 'leave'])
+        ->name('impersonate.leave');
 });
 ```
 
@@ -72,6 +81,97 @@ Route::middleware(['auth', 'verified'])->group(function () {
 ```
 
 ## Controllers
+
+### DashboardController
+
+**Location**: `app/Http/Controllers/DashboardController.php`
+
+#### Methods
+
+- `index(Request $request): Response` - Unified dashboard with role-aggregated widgets
+
+#### Key Logic
+
+```php
+public function index(Request $request): Response
+{
+    $user = auth()->user();
+    $userRoles = $user->roles->pluck('name')->toArray();
+
+    // Aggregate widgets from ALL user roles (unified dashboard)
+    $widgets = [];
+    foreach ($userRoles as $role) {
+        $widgets = array_merge($widgets, $this->getWidgetsForRole($role, $user));
+    }
+
+    // Sort by priority and limit to reasonable number
+    $widgets = collect($widgets)
+        ->sortBy('priority')
+        ->take(9) // Max 9 widgets (3 rows of 3)
+        ->values()
+        ->all();
+
+    return Inertia::render('dashboard', [
+        'user' => $user,
+        'userRoles' => $userRoles,
+        'widgets' => $widgets,
+    ]);
+}
+
+private function getWidgetsForRole(string $role, $user): array
+{
+    return match ($role) {
+        'Super Admin' => $this->getSuperAdminWidgets($user),
+        'Coach' => $this->getCoachWidgets($user),
+        'Athlete' => $this->getAthleteWidgets($user),
+        'Parent/Guardian' => $this->getParentWidgets($user),
+        'Academy Owner' => $this->getAcademyOwnerWidgets($user),
+        'Club Manager' => $this->getClubManagerWidgets($user),
+        'General User' => $this->getGeneralUserWidgets($user),
+        default => []
+    };
+}
+```
+
+### RoleAssignmentController
+
+**Location**: `app/Http/Controllers/Admin/RoleAssignmentController.php`
+
+#### Methods
+
+- `index(Request $request): Response` - Admin role assignment interface with search and pagination
+- `assign(Request $request): RedirectResponse` - Assign role to user with hierarchical validation
+
+#### Key Logic
+
+```php
+public function assign(Request $request)
+{
+    $validated = $request->validate([
+        'selectedUser' => 'required|exists:users,id',
+        'selectedRole' => 'required|string|exists:roles,name',
+    ]);
+
+    // Advanced validation rules
+    $user = User::find($validated['selectedUser']);
+    $role = Role::where('name', $validated['selectedRole'])->first();
+
+    // Prevent self-assignment of high-level roles (Super Admin and above)
+    if ($request->user()->id === $user->id && $role->level >= 900) {
+        return back()->withErrors(['authorization' => 'Cannot assign high-level administrative roles to yourself']);
+    }
+
+    // Check role level hierarchy (assignee cannot assign higher-level roles)
+    if ($request->user()->getHighestRoleLevel() <= $role->level && ! $request->user()->hasRole('Super Admin')) {
+        return back()->withErrors(['authorization' => 'Cannot assign roles at or above your authority level']);
+    }
+
+    // Execute role assignment
+    $user->syncRoles([$validated['selectedRole']]);
+
+    return redirect()->back()->with('success', 'Role assigned successfully!');
+}
+```
 
 ### ProfileController
 

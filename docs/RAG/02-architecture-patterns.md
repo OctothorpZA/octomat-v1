@@ -80,7 +80,49 @@ class EloquentUserRepository implements UserRepositoryInterface
 }
 ```
 
-### 3. Service Layer Pattern (Future Extension)
+### 3. Unified Dashboard Pattern
+
+Role-aggregated widget system that dynamically combines content based on user permissions and roles.
+
+```php
+class DashboardController extends Controller
+{
+    public function index(Request $request): Response
+    {
+        $user = auth()->user();
+        $userRoles = $user->roles->pluck('name')->toArray();
+
+        // Aggregate widgets from ALL user roles
+        $widgets = [];
+        foreach ($userRoles as $role) {
+            $widgets = array_merge($widgets, $this->getWidgetsForRole($role, $user));
+        }
+
+        // Sort by priority and limit
+        $widgets = collect($widgets)
+            ->sortBy('priority')
+            ->take(9)
+            ->values()
+            ->all();
+
+        return Inertia::render('dashboard', [
+            'user' => $user,
+            'userRoles' => $userRoles,
+            'widgets' => $widgets,
+        ]);
+    }
+}
+```
+
+**Benefits:**
+
+- Single dashboard for all user types
+- Role-based content aggregation
+- Scalable widget system
+- Clean separation of role-specific logic
+- Easy to extend with new roles/widgets
+
+### 4. Service Layer Pattern (Future Extension)
 
 ```php
 class ProfileService
