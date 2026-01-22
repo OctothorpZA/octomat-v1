@@ -146,8 +146,8 @@ The Laravel Boost guidelines are specifically curated by Laravel maintainers for
 This application is a Laravel application and its main Laravel ecosystems package & versions are below. You are an expert with them all. Ensure you abide by these specific packages & versions.
 
 - php - 8.5.2
-- franbarbalopez/mirror (IMPERSONATE) - v1
 - inertiajs/inertia-laravel (INERTIA) - v2
+- lab404/laravel-impersonate (IMPERSONATE) - v1
 - laravel/fortify (FORTIFY) - v1
 - laravel/framework (LARAVEL) - v12
 - laravel/prompts (PROMPTS) - v0

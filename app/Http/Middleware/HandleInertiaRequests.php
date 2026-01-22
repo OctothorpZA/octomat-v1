@@ -43,8 +43,8 @@ class HandleInertiaRequests extends Middleware
                 'roles' => $request->user() ? $request->user()->getRoleNames() : [],
             ],
             'impersonate' => [
-                'isImpersonating' => \Mirror\Facades\Mirror::isImpersonating(),
-                'originalUser' => \Mirror\Facades\Mirror::getImpersonator(),
+                'isImpersonating' => app(\Lab404\Impersonate\Services\ImpersonateManager::class)->isImpersonating(),
+                'originalUser' => app(\Lab404\Impersonate\Services\ImpersonateManager::class)->getImpersonator(),
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
         ];

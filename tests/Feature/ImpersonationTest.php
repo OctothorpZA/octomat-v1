@@ -18,13 +18,13 @@ test('super admin can impersonate other users', function () {
 
     // Test impersonation methods exist
     expect($superAdmin->canImpersonate())->toBeTrue();
-    expect($regularUser->canBeImpersonatedBy($superAdmin))->toBeTrue();
+    expect($regularUser->canBeImpersonated())->toBeTrue();
 
-    // Test impersonation works using Mirror facade
-    \Mirror\Facades\Mirror::start($regularUser);
+    // Test impersonation works using Laravel Impersonate
+    $superAdmin->impersonate($regularUser);
 
     // After impersonation, we should be the regular user
-    expect(\Mirror\Facades\Mirror::isImpersonating())->toBeTrue();
+    expect(auth()->user()->isImpersonated())->toBeTrue();
     expect(auth()->id())->toBe($regularUser->id);
 });
 
@@ -53,5 +53,5 @@ test('super admins cannot be impersonated', function () {
     $regularUser = User::factory()->create();
     $regularUser->assignRole('General User');
 
-    expect($superAdmin->canBeImpersonatedBy($regularUser))->toBeFalse();
+    expect($superAdmin->canBeImpersonated())->toBeFalse();
 });

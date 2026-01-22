@@ -22,8 +22,19 @@ export function ImpersonationBanner() {
                     All actions will be performed as this user.
                 </span>
                 <Link
-                    href="/impersonate/stop"
+                    href="/impersonate/leave"
+                    method="post"
+                    as="button"
                     className="ml-4 inline-flex items-center rounded-md bg-orange-600 px-3 py-1 text-sm font-medium text-white hover:bg-orange-700"
+                    onClick={(e: React.MouseEvent) => {
+                        if (
+                            !confirm(
+                                'Are you sure you want to stop impersonating?',
+                            )
+                        ) {
+                            e.preventDefault();
+                        }
+                    }}
                 >
                     <X className="mr-1 h-3 w-3" />
                     Stop Impersonating

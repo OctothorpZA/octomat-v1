@@ -8,15 +8,15 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Str;
+use Lab404\Impersonate\Models\Impersonate;
 use Laravel\Fortify\TwoFactorAuthenticatable;
-use Mirror\Concerns\Impersonatable;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, HasRoles, Impersonatable, Notifiable, SoftDeletes, TwoFactorAuthenticatable;
+    use HasFactory, HasRoles, Impersonate, Notifiable, SoftDeletes, TwoFactorAuthenticatable;
 
     /**
      * The attributes that are mass assignable.
@@ -213,7 +213,7 @@ class User extends Authenticatable
      * Determine if the user can be impersonated by the given impersonator.
      * Super admins cannot be impersonated, but all other users can.
      */
-    public function canBeImpersonatedBy(User $impersonator): bool
+    public function canBeImpersonated(): bool
     {
         return ! $this->hasRole('Super Admin');
     }
