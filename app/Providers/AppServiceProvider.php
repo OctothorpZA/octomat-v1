@@ -8,8 +8,6 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
-use Mirror\Events\ImpersonationStarted;
-use Mirror\Events\ImpersonationStopped;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -51,29 +49,27 @@ class AppServiceProvider extends ServiceProvider
 
     protected function configureImpersonationEvents(): void
     {
-        // Mirror impersonation events for audit logging
-        Event::listen(ImpersonationStarted::class, function (ImpersonationStarted $event) {
+        // Laravel Impersonate events for audit logging
+        Event::listen(TakeImpersonation::class, function (TakeImpersonation $event) {
             // Log impersonation start for audit trail
             logger()->info('User impersonation started', [
                 'impersonator_id' => $event->impersonator->id,
                 'impersonator_email' => $event->impersonator->email,
                 'impersonated_id' => $event->impersonated->id,
                 'impersonated_email' => $event->impersonated->email,
-                'guard' => $event->guardName,
                 'timestamp' => now()->toISOString(),
             ]);
 
             // TODO: Sprint 4 - Store in audit log database table
         });
 
-        Event::listen(ImpersonationStopped::class, function (ImpersonationStopped $event) {
+        Event::listen(LeaveImpersonation::class, function (LeaveImpersonation $event) {
             // Log impersonation stop for audit trail
             logger()->info('User impersonation stopped', [
                 'impersonator_id' => $event->impersonator->id,
                 'impersonator_email' => $event->impersonator->email,
                 'impersonated_id' => $event->impersonated->id,
                 'impersonated_email' => $event->impersonated->email,
-                'guard' => $event->guardName,
                 'timestamp' => now()->toISOString(),
             ]);
 

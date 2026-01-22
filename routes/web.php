@@ -10,10 +10,10 @@ Route::get('/', function () {
     ]);
 })->name('home');
 
+use App\Http\Controllers\DashboardController;
+
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::get('dashboard', function () {
-        return Inertia::render('dashboard');
-    })->name('dashboard');
+    Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
 });
 
 use App\Http\Controllers\Admin\RoleAssignmentController;
@@ -27,15 +27,22 @@ Route::middleware(['auth'])->prefix('admin')->group(function () {
         ->middleware('can:assign-roles');
 });
 
-// Mirror impersonation routes (protected)
+// Admin routes (protected)
+Route::middleware(['auth', 'verified'])->prefix('admin')->group(function () {
+    // Role assignment functionality (dashboard is now unified)
+});
+
+// Laravel Impersonate routes (protected)
 Route::middleware(['auth', 'verified'])->group(function () {
-    // Only super_admin can access these
-    Route::middleware(['role:super_admin', 'mirror.ttl'])->group(function () {
-        Route::post('/impersonate/{user}', [App\Http\Controllers\ImpersonationController::class, 'start'])
-            ->name('impersonate.start');
-        Route::post('/impersonate/stop', [App\Http\Controllers\ImpersonationController::class, 'stop'])
-            ->name('impersonate.stop');
+    // Only Super Admin can START impersonation
+    Route::middleware(['role:Super Admin'])->group(function () {
+        Route::post('/impersonate/take/{id}/{guardName?}', [Lab404\Impersonate\Controllers\ImpersonateController::class, 'take'])
+            ->name('impersonate');
     });
+
+    // ANY authenticated user can STOP impersonation (including impersonated users)
+    Route::post('/impersonate/leave', [Lab404\Impersonate\Controllers\ImpersonateController::class, 'leave'])
+        ->name('impersonate.leave');
 });
 
 require __DIR__.'/settings.php';

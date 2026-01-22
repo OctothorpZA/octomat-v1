@@ -4,6 +4,9 @@ import { vi } from 'vitest';
 // Mock all the complex dependencies to test just the component logic
 vi.mock('@inertiajs/react', () => ({
     Head: () => null,
+    router: {
+        get: vi.fn(),
+    },
     useForm: vi.fn(() => ({
         data: { selectedUser: '', selectedRole: '' },
         setData: vi.fn(),
@@ -80,10 +83,30 @@ vi.mock('@/components/ui/button', () => ({
 
 import RoleAssignment from '@/pages/admin/role-assignment';
 
-const mockUsers = [
-    { id: 1, full_name: 'John Doe', email: 'john@example.com' },
-    { id: 2, full_name: 'Jane Smith', email: 'jane@example.com' },
-];
+const mockUsers = {
+    data: [
+        {
+            id: 1,
+            first_name: 'John',
+            last_name: 'Doe',
+            email: 'john@example.com',
+            full_name: 'John Doe',
+            roles: [],
+        },
+        {
+            id: 2,
+            first_name: 'Jane',
+            last_name: 'Smith',
+            email: 'jane@example.com',
+            full_name: 'Jane Smith',
+            roles: [],
+        },
+    ],
+    current_page: 1,
+    last_page: 1,
+    total: 2,
+    links: [],
+};
 
 const mockRoles = {
     'Super Admin': 'System Administrator',
