@@ -15,6 +15,15 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
+interface StatsWidgetData {
+    value: number;
+    description: string;
+}
+
+interface ActionsWidgetData {
+    actions: Array<{ label: string; route: string }>;
+}
+
 interface DashboardProps {
     user: {
         id: number;
@@ -33,7 +42,7 @@ interface DashboardProps {
             | 'family'
             | 'welcome';
         title: string;
-        data?: Record<string, any>;
+        data?: StatsWidgetData | ActionsWidgetData;
         actions?: Array<{ label: string; route: string }>;
         priority: number;
     }>;
@@ -49,7 +58,7 @@ interface WidgetProps {
             | 'family'
             | 'welcome';
         title: string;
-        data?: Record<string, any>;
+        data?: StatsWidgetData | ActionsWidgetData;
         actions?: Array<{ label: string; route: string }>;
         priority: number;
     };

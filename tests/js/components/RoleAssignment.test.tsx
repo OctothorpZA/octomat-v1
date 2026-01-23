@@ -6,6 +6,7 @@ vi.mock('@inertiajs/react', () => ({
     Head: () => null,
     router: {
         get: vi.fn(),
+        visit: vi.fn(),
     },
     useForm: vi.fn(() => ({
         data: { selectedUser: '', selectedRole: '' },
