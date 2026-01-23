@@ -44,6 +44,29 @@ declare module '@inertiajs/react' {
     }
 }
 
+export interface StatsWidgetData {
+    value: number;
+    description: string;
+}
+
+export interface ActionsWidgetData {
+    actions: Array<{ label: string; route: string }>;
+}
+
+export interface Widget {
+    type:
+        | 'stats'
+        | 'actions'
+        | 'profile'
+        | 'performance'
+        | 'family'
+        | 'welcome';
+    title: string;
+    data?: StatsWidgetData | ActionsWidgetData | Record<string, unknown>;
+    actions?: Array<{ label: string; route: string }>;
+    priority: number;
+}
+
 export interface User {
     id: number;
     name: string; // Backward compatibility accessor

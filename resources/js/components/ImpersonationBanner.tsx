@@ -8,7 +8,7 @@ export function ImpersonationBanner() {
 
     const { isImpersonating, originalUser } =
         (impersonate as
-            | { isImpersonating: boolean; originalUser: any }
+            | { isImpersonating: boolean; originalUser: User | null }
             | undefined) || {};
 
     if (!isImpersonating || !originalUser) return null;
