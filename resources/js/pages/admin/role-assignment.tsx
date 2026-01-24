@@ -1,18 +1,9 @@
-import { Head, Link, router, useForm } from '@inertiajs/react';
-import { ChevronLeft, ChevronRight, Search } from 'lucide-react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
 import {
     Table,
     TableBody,
@@ -38,7 +29,25 @@ interface User {
     middle_names?: string | null;
     last_name?: string;
     email: string;
-    full_name?: string;
+    full_name: string;
+    roles: Role[];
+}
+
+interface RoleAssignmentProps {
+    users: PaginatedUsers;
+    roles: Record<string, string>;
+    filters: {
+        search?: string;
+        role?: string;
+    };
+}
+
+interface User {
+    id: number;
+    first_name?: string;
+    middle_names?: string | null;
+    last_name?: string;
+    email: string;
     roles: Role[];
 }
 
@@ -57,41 +66,138 @@ interface PaginatedUsers {
     links: PaginationLinks[];
 }
 
-export default function RoleAssignment({
-    users,
-    roles,
-    filters,
-}: {
+interface RoleAssignmentProps {
     users: PaginatedUsers;
     roles: Record<string, string>;
-    filters?: { search?: string };
-}) {
-    const [search, setSearch] = useState(filters?.search || '');
-    const debouncedSearch = useDebounce(search, 300);
+    filters: {
+        search?: string;
+        role?: string;
+    };
+}
 
-    const { data, setData, post, processing, errors } = useForm({
-        selectedUser: '',
-        selectedRole: '',
-    });
+export default function RoleAssignment({
+    users: initialUsers,
+    roles,
+    filters,
+}: RoleAssignmentProps) {
+    const [search, setSearch] = useState(filters?.search || '');
+    const [roleFilter, setRoleFilter] = useState<string>(filters?.role || '');
+    const [users, setUsers] = useState(initialUsers);
+    const [connectionStatus, setConnectionStatus] = useState<
+        'connecting' | 'connected' | 'disconnected' | 'error'
+    >('connecting');
+    const debouncedSearch = useDebounce(search, 300);
+    const { auth } = usePage().props as any;
 
     // Auto-submit search with debouncing
     useEffect(() => {
-        // Use window.location for direct navigation with query params
-        const url = new URL(window.location.href);
-        if (debouncedSearch) {
-            url.searchParams.set('search', debouncedSearch);
-        } else {
-            url.searchParams.delete('search');
-        }
-        router.visit(url.toString(), {
-            preserveState: true,
-            replace: true,
+        router.get(
+            '/admin/roles/assign',
+            {
+                search: debouncedSearch,
+                role: roleFilter,
+            },
+            {
+                preserveState: true,
+                replace: true,
+            },
+        );
+    }, [debouncedSearch, roleFilter]);
+
+    // Real-time broadcasting listeners
+    useEffect(() => {
+        if (!auth?.user?.id) return;
+
+        setConnectionStatus('connecting');
+
+        const channel = (window as any).Echo.private(`admin.${auth.user.id}`);
+
+        // Connection established
+        channel.subscribed(() => {
+            console.log('Connected to real-time admin channel');
+            setConnectionStatus('connected');
         });
-    }, [debouncedSearch]);
+
+        // Connection error
+        channel.error((error: any) => {
+            console.error('Real-time connection error:', error);
+            setConnectionStatus('error');
+            if ((window as any).showToast) {
+                (window as any).showToast('Real-time connection lost', 'error');
+            }
+        });
+
+        // Listen for role assignment events
+        channel.listen('.role.assigned', (event: any) => {
+            console.log('Role assigned:', event);
+
+            // Show toast notification
+            if ((window as any).showToast) {
+                (window as any).showToast(
+                    `Role "${event.role}" assigned to ${event.user.name}`,
+                    'success',
+                );
+            }
+
+            // Update user data directly without page reload
+            setUsers((currentUsers) => ({
+                ...currentUsers,
+                data: currentUsers.data.map((user) =>
+                    user.id === event.user.id
+                        ? {
+                              ...user,
+                              roles: [
+                                  ...user.roles,
+                                  {
+                                      id: Date.now(),
+                                      name: event.role,
+                                      display_name: event.role,
+                                  },
+                              ],
+                          }
+                        : user,
+                ),
+            }));
+        });
+
+        // Listen for role removal events
+        channel.listen('.role.removed', (event: any) => {
+            console.log('Role removed:', event);
+
+            // Show toast notification
+            if ((window as any).showToast) {
+                (window as any).showToast(
+                    `Role "${event.role}" removed from ${event.user.name}`,
+                    'info',
+                );
+            }
+
+            // Update user data directly without page reload
+            setUsers((currentUsers) => ({
+                ...currentUsers,
+                data: currentUsers.data.map((user) =>
+                    user.id === event.user.id
+                        ? {
+                              ...user,
+                              roles: user.roles.filter(
+                                  (role) => role.name !== event.role,
+                              ),
+                          }
+                        : user,
+                ),
+            }));
+        });
+
+        // Cleanup on unmount
+        return () => {
+            setConnectionStatus('disconnected');
+            (window as any).Echo.leave(`admin.${auth.user.id}`);
+        };
+    }, [auth?.user?.id]);
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        post(assign().url);
+        router.post(assign().url, {});
     };
 
     const breadcrumbs: BreadcrumbItem[] = [
@@ -109,101 +215,126 @@ export default function RoleAssignment({
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Role Assignment" />
             <div className="space-y-6">
-                <div>
-                    <h1 className="text-2xl font-bold">Role Assignment</h1>
-                    <p className="text-muted-foreground">
-                        Assign roles to users in the system.
-                    </p>
-                </div>
-
-                {/* Search Input */}
-                <div className="flex items-center space-x-2">
-                    <div className="relative max-w-sm flex-1">
-                        <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                        <Input
-                            type="text"
-                            placeholder="Search users by name or email..."
-                            value={search}
-                            onChange={(
-                                e: React.ChangeEvent<HTMLInputElement>,
-                            ) => setSearch(e.target.value)}
-                            className="pl-9"
-                        />
+                <div className="flex items-center justify-between">
+                    <div>
+                        <h1 className="text-2xl font-bold">Role Assignment</h1>
+                        <p className="text-muted-foreground">
+                            Assign roles to users in the system.
+                        </p>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                        <Badge
+                            variant={
+                                connectionStatus === 'connected'
+                                    ? 'default'
+                                    : connectionStatus === 'connecting'
+                                      ? 'secondary'
+                                      : 'destructive'
+                            }
+                            className="text-xs"
+                        >
+                            {connectionStatus === 'connected' && '🟢 Live'}
+                            {connectionStatus === 'connecting' &&
+                                '🟡 Connecting'}
+                            {connectionStatus === 'disconnected' &&
+                                '⚪ Disconnected'}
+                            {connectionStatus === 'error' &&
+                                '🔴 Connection Error'}
+                        </Badge>
                     </div>
                 </div>
 
+                {/* Search and Filter Controls */}
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Search & Filter Users</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="flex flex-col space-y-4 md:flex-row md:space-y-0 md:space-x-4">
+                            <div className="flex-1">
+                                <label
+                                    htmlFor="search"
+                                    className="mb-1 block text-sm font-medium text-gray-700"
+                                >
+                                    Search Users
+                                </label>
+                                <input
+                                    id="search"
+                                    type="text"
+                                    value={search}
+                                    onChange={(e) => setSearch(e.target.value)}
+                                    placeholder="Search by name or email..."
+                                    className="w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                />
+                            </div>
+                            <div className="flex-1">
+                                <label
+                                    htmlFor="role-filter"
+                                    className="mb-1 block text-sm font-medium text-gray-700"
+                                >
+                                    Filter by Role
+                                </label>
+                                <select
+                                    id="role-filter"
+                                    value={roleFilter}
+                                    onChange={(e) =>
+                                        setRoleFilter(e.target.value)
+                                    }
+                                    className="w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                >
+                                    <option value="">All Roles</option>
+                                    {Object.entries(roles).map(
+                                        ([key, value]) => (
+                                            <option key={key} value={key}>
+                                                {value}
+                                            </option>
+                                        ),
+                                    )}
+                                </select>
+                            </div>
+                        </div>
+                        {(search || roleFilter) && (
+                            <div className="mt-4 flex items-center space-x-2">
+                                <span className="text-sm text-gray-600">
+                                    Active filters:
+                                    {search && (
+                                        <span className="ml-1 font-medium">
+                                            Search: "{search}"
+                                        </span>
+                                    )}
+                                    {roleFilter && (
+                                        <span className="ml-1 font-medium">
+                                            Role: {roles[roleFilter]}
+                                        </span>
+                                    )}
+                                </span>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => {
+                                        setSearch('');
+                                        setRoleFilter('');
+                                    }}
+                                >
+                                    Clear Filters
+                                </Button>
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
+
+                {/* Role assignment form - Phase 2
                 <Card className="max-w-md">
                     <CardHeader>
                         <CardTitle>Assign Role to User</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <form onSubmit={handleSubmit} className="space-y-4">
-                            <div>
-                                <Label>Select User</Label>
-                                <Select
-                                    value={data.selectedUser}
-                                    onValueChange={(value) =>
-                                        setData('selectedUser', value)
-                                    }
-                                >
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Choose User" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {users.data.map((user) => (
-                                            <SelectItem
-                                                key={user.id}
-                                                value={user.id.toString()}
-                                            >
-                                                {user.full_name || user.email}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                                {errors.selectedUser && (
-                                    <p className="mt-1 text-sm text-red-500">
-                                        {errors.selectedUser}
-                                    </p>
-                                )}
-                            </div>
-
-                            <div>
-                                <Label>Assign Role</Label>
-                                <Select
-                                    value={data.selectedRole}
-                                    onValueChange={(value) =>
-                                        setData('selectedRole', value)
-                                    }
-                                >
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Select Role" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {Object.entries(roles).map(
-                                            ([key, label]) => (
-                                                <SelectItem
-                                                    key={key}
-                                                    value={key}
-                                                >
-                                                    {label}
-                                                </SelectItem>
-                                            ),
-                                        )}
-                                    </SelectContent>
-                                </Select>
-                                {errors.selectedRole && (
-                                    <p className="mt-1 text-sm text-red-500">
-                                        {errors.selectedRole}
-                                    </p>
-                                )}
-                            </div>
-
-                            <Button type="submit" disabled={processing}>
-                                {processing ? 'Assigning...' : 'Assign Role'}
-                            </Button>
-                        </form>
+                        <p className="text-sm text-muted-foreground">
+                            Role assignment form will be implemented in Phase 2.
+                        </p>
                     </CardContent>
                 </Card>
+                */}
 
                 {/* Current Role Assignments Table */}
                 <Card>

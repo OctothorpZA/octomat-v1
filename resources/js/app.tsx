@@ -1,5 +1,8 @@
 import '../css/app.css';
 
+// Import Echo configuration for real-time broadcasting
+import './echo';
+
 import { createInertiaApp } from '@inertiajs/react';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import { StrictMode } from 'react';

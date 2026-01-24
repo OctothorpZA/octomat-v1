@@ -4,74 +4,56 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Services\AuditService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Spatie\Permission\Models\Role;
 
 class RoleAssignmentController extends Controller
 {
-    public function index(Request $request)
+    public function index(Request $request): \Inertia\Response
     {
         $query = User::with('roles')
             ->select('id', 'first_name', 'middle_names', 'last_name', 'email');
 
-        // Add comprehensive search functionality (enhanced from Sprint 3)
+        // Add real-time search functionality
         if ($request->filled('search')) {
             $search = $request->search;
-
             $query->where(function ($q) use ($search) {
-                // Case-insensitive search for individual name components
-                $q->whereRaw('LOWER(first_name) LIKE LOWER(?)', ["%{$search}%"])
-                    ->orWhereRaw('LOWER(middle_names) LIKE LOWER(?)', ["%{$search}%"])
-                    ->orWhereRaw('LOWER(last_name) LIKE LOWER(?)', ["%{$search}%"])
-                  // Case-insensitive search for concatenated full name (first + middle + last)
-                    ->orWhereRaw("LOWER(CONCAT(COALESCE(first_name, ''), ' ', COALESCE(middle_names, ''), ' ', COALESCE(last_name, ''))) LIKE LOWER(?)", ["%{$search}%"])
-                  // Case-insensitive search for concatenated first + last (common display format)
-                    ->orWhereRaw("LOWER(CONCAT(COALESCE(first_name, ''), ' ', COALESCE(last_name, ''))) LIKE LOWER(?)", ["%{$search}%"])
-                  // Case-insensitive search for email
-                    ->orWhereRaw('LOWER(email) LIKE LOWER(?)', ["%{$search}%"]);
+                $q->where('first_name', 'like', "%{$search}%")
+                    ->orWhere('last_name', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%");
+            });
+        }
+
+        // Add role filtering
+        if ($request->filled('role')) {
+            $role = $request->role;
+            $query->whereHas('roles', function ($q) use ($role) {
+                $q->where('name', $role);
             });
         }
 
         return Inertia::render('admin/role-assignment', [
-            'users' => $query->paginate(10)->withQueryString(),
+            'users' => $query->paginate(15)->withQueryString(),
             'roles' => $this->getAvailableRoles(),
-            'filters' => $request->only(['search']),
+            'filters' => $request->only(['search', 'role']),
         ]);
-    }
-
-    private function getAvailableRoles(): array
-    {
-        return [
-            'Super Admin' => 'System Administrator',
-            'Federation Admin' => 'Federation Administrator',
-            'Event Organiser' => 'Event Organiser',
-            'Affiliate Manager' => 'Affiliate Manager',
-            'Academy Owner' => 'Academy Owner',
-            'Club Manager' => 'Club Manager',
-            'Club Admin' => 'Club Administrator',
-            'Coach' => 'Coach',
-            'Parent/Guardian' => 'Parent/Guardian',
-            'Athlete' => 'Athlete',
-            'Event Staff' => 'Event Staff',
-            'General User' => 'General User',
-        ];
     }
 
     public function assign(Request $request)
     {
         $validated = $request->validate([
             'selectedUser' => 'required|exists:users,id',
-            'selectedRole' => 'required|string|exists:roles,name',
+            'selectedRole' => 'required|string',
         ]);
 
-        // Advanced validation rules
+        // Find user and role
         $user = User::find($validated['selectedUser']);
         $role = Role::where('name', $validated['selectedRole'])->first();
 
-        // Prevent self-assignment of high-level roles (Super Admin and above)
-        if ($request->user()->id === $user->id && $role->level >= 900) {
-            return back()->withErrors(['authorization' => 'Cannot assign high-level administrative roles to yourself']);
+        if (! $role) {
+            return back()->withErrors(['role' => 'Role not found']);
         }
 
         // Check role level hierarchy (assignee cannot assign higher-level roles)
@@ -93,6 +75,73 @@ class RoleAssignmentController extends Controller
         // Execute role assignment
         $user->syncRoles([$validated['selectedRole']]);
 
+        // Log the audit trail
+        app(AuditService::class)->logRoleChange(
+            $request->user(),
+            $user,
+            'assigned',
+            $validated['selectedRole']
+        );
+
+        // Dispatch broadcast event for real-time updates
+        RoleAssigned::dispatch($user, $validated['selectedRole'], $request->user());
+
         return redirect()->back()->with('success', 'Role assigned successfully!');
+    }
+
+    public function remove(Request $request)
+    {
+        $validated = $request->validate([
+            'selectedUser' => 'required|exists:users,id',
+            'selectedRole' => 'required|string',
+        ]);
+
+        // Find user
+        $user = User::find($validated['selectedUser']);
+
+        // Execute role removal
+        $user->removeRole($validated['selectedRole']);
+
+        // Log the audit trail
+        app(AuditService::class)->logRoleChange(
+            $request->user(),
+            $user,
+            'removed',
+            $validated['selectedRole']
+        );
+
+        // Dispatch broadcast event for real-time updates
+        RoleRemoved::dispatch($user, $validated['selectedRole'], $request->user());
+
+        return redirect()->back()->with('success', 'Role removed successfully!');
+    }
+
+    public function audit(Request $request)
+    {
+        $auditLogs = app(AuditService::class)->getAuditLogs($request->get('page', 1));
+        $stats = app(AuditService::class)->getAuditStats();
+
+        return Inertia::render('admin/audit-log', [
+            'auditLogs' => $auditLogs,
+            'stats' => $stats,
+        ]);
+    }
+
+    private function getAvailableRoles(): array
+    {
+        return [
+            'Super Admin' => 'System Administrator',
+            'Federation Admin' => 'Federation Administrator',
+            'Event Organiser' => 'Event Organiser',
+            'Affiliate Manager' => 'Affiliate Manager',
+            'Academy Owner' => 'Academy Owner',
+            'Club Manager' => 'Club Manager',
+            'Club Admin' => 'Club Administrator',
+            'Coach' => 'Coach',
+            'Parent/Guardian' => 'Parent/Guardian',
+            'Athlete' => 'Athlete',
+            'Event Staff' => 'Event Staff',
+            'General User' => 'General User',
+        ];
     }
 }

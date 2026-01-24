@@ -116,7 +116,7 @@ test('super admin can access role assignment page with user list and pagination'
     $response->assertOk()
         ->assertInertia(fn ($inertia) => $inertia
             ->component('admin/role-assignment')
-            ->has('users.data', 10) // Paginated to 10 per page
+            ->has('users.data', 15) // Paginated to 15 per page
             ->has('users.current_page')
             ->has('users.last_page')
             ->where('users.total', 16) // 15 created + 1 admin = 16 total

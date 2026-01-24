@@ -48,38 +48,31 @@ vi.mock('@/components/ui/card', () => ({
     ),
 }));
 
-vi.mock('@/components/ui/label', () => ({
-    Label: ({ children }: { children: React.ReactNode }) => (
-        <label>{children}</label>
+vi.mock('@/components/ui/table', () => ({
+    Table: ({ children }: { children: React.ReactNode }) => (
+        <table>{children}</table>
+    ),
+    TableBody: ({ children }: { children: React.ReactNode }) => (
+        <tbody>{children}</tbody>
+    ),
+    TableCell: ({ children }: { children: React.ReactNode }) => (
+        <td>{children}</td>
+    ),
+    TableHead: ({ children }: { children: React.ReactNode }) => (
+        <th>{children}</th>
+    ),
+    TableHeader: ({ children }: { children: React.ReactNode }) => (
+        <thead>{children}</thead>
+    ),
+    TableRow: ({ children }: { children: React.ReactNode }) => (
+        <tr>{children}</tr>
     ),
 }));
 
-vi.mock('@/components/ui/select', () => ({
-    Select: ({ children }: { children: React.ReactNode }) => (
-        <div>{children}</div>
+vi.mock('@/components/admin/UserFilters', () => ({
+    UserFilters: ({ children }: { children: React.ReactNode }) => (
+        <div data-testid="user-filters">{children}</div>
     ),
-    SelectContent: ({ children }: { children: React.ReactNode }) => (
-        <div>{children}</div>
-    ),
-    SelectItem: ({ children }: { children: React.ReactNode }) => (
-        <option>{children}</option>
-    ),
-    SelectTrigger: ({ children }: { children: React.ReactNode }) => (
-        <button>{children}</button>
-    ),
-    SelectValue: ({ children }: { children: React.ReactNode }) => (
-        <span>{children}</span>
-    ),
-}));
-
-vi.mock('@/components/ui/button', () => ({
-    Button: ({
-        children,
-        ...props
-    }: {
-        children: React.ReactNode;
-        [key: string]: unknown;
-    }) => <button {...props}>{children}</button>,
 }));
 
 import RoleAssignment from '@/pages/admin/role-assignment';
@@ -91,7 +84,6 @@ const mockUsers = {
             first_name: 'John',
             last_name: 'Doe',
             email: 'john@example.com',
-            full_name: 'John Doe',
             roles: [],
         },
         {
@@ -99,7 +91,6 @@ const mockUsers = {
             first_name: 'Jane',
             last_name: 'Smith',
             email: 'jane@example.com',
-            full_name: 'Jane Smith',
             roles: [],
         },
     ],
@@ -114,29 +105,34 @@ const mockRoles = {
     Coach: 'Coach',
 };
 
+const mockFilters = {
+    search: '',
+    role: '',
+};
+
+const mockProps = {
+    users: mockUsers,
+    roles: mockRoles,
+    filters: mockFilters,
+};
+
 describe('RoleAssignment Component', () => {
     test('renders basic structure', () => {
-        render(<RoleAssignment users={mockUsers} roles={mockRoles} />);
+        render(<RoleAssignment {...mockProps} />);
 
-        // Just test that it renders without crashing and has basic structure
+        // Test that it renders without crashing and has basic structure
         expect(screen.getByText('Role Assignment')).toBeInTheDocument();
-        expect(screen.getByText('Assign Role to User')).toBeInTheDocument();
-    });
-
-    test('accepts user and role props', () => {
-        render(<RoleAssignment users={mockUsers} roles={mockRoles} />);
-
-        // Test that component receives props without testing complex UI interactions
-        // This verifies the component can be instantiated with the expected data structure
-        expect(screen.getByText('Role Assignment')).toBeInTheDocument();
-    });
-
-    test('renders form elements', () => {
-        render(<RoleAssignment users={mockUsers} roles={mockRoles} />);
-
-        // Test that basic form elements are present
         expect(
-            screen.getByRole('button', { name: 'Assign Role' }),
+            screen.getByText('Current Role Assignments'),
         ).toBeInTheDocument();
+    });
+
+    test('renders user table', () => {
+        render(<RoleAssignment {...mockProps} />);
+
+        // Test that user table is rendered with data
+        expect(screen.getByText('John Doe')).toBeInTheDocument();
+        expect(screen.getByText('Jane Smith')).toBeInTheDocument();
+        expect(screen.getByText('john@example.com')).toBeInTheDocument();
     });
 });

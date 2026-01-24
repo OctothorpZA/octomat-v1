@@ -25,6 +25,12 @@ Route::middleware(['auth'])->prefix('admin')->group(function () {
     Route::post('/roles/assign', [RoleAssignmentController::class, 'assign'])
         ->name('admin.roles.assign.post')
         ->middleware('can:assign-roles');
+    Route::post('/roles/remove', [RoleAssignmentController::class, 'remove'])
+        ->name('admin.roles.remove')
+        ->middleware('can:assign-roles');
+    Route::get('/audit', [RoleAssignmentController::class, 'audit'])
+        ->name('admin.audit')
+        ->middleware('role:Super Admin');
 });
 
 // Admin routes (protected)
