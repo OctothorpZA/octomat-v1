@@ -19,6 +19,7 @@ class RoleSeeder extends Seeder
             'clubs.manage', 'club.members.manage',
             'events.create', 'events.view', 'events.manage',
             'profile.basic.manage',
+            'assign-roles', // Permission for role assignment
         ];
 
         foreach ($permissions as $permission) {
@@ -117,7 +118,7 @@ class RoleSeeder extends Seeder
 
             // Assign basic permissions based on role
             $rolePermissions = match ($roleData['name']) {
-                'Super Admin' => ['system.admin', 'users.manage', 'roles.manage'],
+                'Super Admin' => ['system.admin', 'users.manage', 'roles.manage', 'assign-roles'],
                 'Federation Admin' => ['system.audit', 'users.manage', 'federation.admin'],
                 'Event Organiser' => ['events.create', 'events.view', 'events.manage'],
                 'Affiliate Manager' => ['academies.view', 'federation.members.manage'],

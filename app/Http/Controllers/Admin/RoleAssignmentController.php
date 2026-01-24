@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Events\RoleAssigned;
+use App\Events\RoleRemoved;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Services\AuditService;
@@ -72,8 +74,13 @@ class RoleAssignmentController extends Controller
             return back()->withErrors(['conflict' => "Cannot assign this role. User already has conflicting roles: {$conflictNames}"]);
         }
 
-        // Execute role assignment
-        $user->syncRoles([$validated['selectedRole']]);
+        // Check if user already has this role (prevent duplicates)
+        if ($user->hasRole($validated['selectedRole'])) {
+            return redirect()->back()->withErrors(['role' => 'User already has this role assigned.']);
+        }
+
+        // Execute role assignment (add role without removing existing ones)
+        $user->assignRole($validated['selectedRole']);
 
         // Log the audit trail
         app(AuditService::class)->logRoleChange(

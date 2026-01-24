@@ -19,6 +19,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 use App\Http\Controllers\Admin\RoleAssignmentController;
 
 Route::middleware(['auth'])->prefix('admin')->group(function () {
+    Route::get('/dashboard', [DashboardController::class, 'admin'])->name('admin.dashboard');
     Route::get('/roles/assign', [RoleAssignmentController::class, 'index'])
         ->name('admin.roles.assign')
         ->middleware('can:assign-roles'); // Custom gate for role assignment access
