@@ -13,12 +13,14 @@
     ],
     "require": {
         "php": "^8.2",
+        "ably/laravel-broadcaster": "^1.0",
         "inertiajs/inertia-laravel": "^2.0",
         "lab404/laravel-impersonate": "^1.7",
         "laravel/fortify": "^1.30",
         "laravel/framework": "^12.0",
         "laravel/tinker": "^2.10.1",
         "laravel/wayfinder": "^0.1.9",
+        "pusher/pusher-php-server": "^7.2",
         "spatie/laravel-permission": "^6.24"
     },
     "require-dev": {

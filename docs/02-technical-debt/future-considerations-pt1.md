@@ -258,3 +258,228 @@ export * from './shared';
 **Document Version:** 1.0
 **Next Review Date:** When types exceed 100 lines
 **Owner:** Development Team
+
+---
+
+## Search Performance Enhancement
+
+**Status:** Future Consideration
+**Priority:** Medium
+**Effort:** 2-3 hours
+
+**Issue:** Current basic LIKE queries may not scale well with large user bases (>1000 users).
+
+**Solution:** Integrate Laravel Scout for full-text search capabilities.
+
+- Add Scout configuration and indexing
+- Implement fuzzy matching and relevance scoring
+- Maintain existing debounced search UX
+- Add search analytics and performance monitoring
+
+**Business Value:** Improved search performance and user experience at scale.
+**Risk:** Minimal - can be added incrementally without breaking changes.
+**Dependencies:** User base growth to justify complexity.
+
+**Recommendation:** Monitor search performance after Phase 1. Implement when query times exceed 500ms or user base grows significantly.
+
+**Related Files:**
+
+- Current: Basic LIKE queries in `RoleAssignmentController.php`
+- Future: Scout integration with Meilisearch or Algolia
+- Impact: `UserFilters.tsx` (frontend unchanged), `RoleAssignmentController.php` (backend enhanced)
+
+**Decision:** Defer Scout integration until performance monitoring indicates need.
+**Trigger:** Query performance >500ms or user base >1000
+**Timeline:** 2-3 hours when triggered
+
+---
+
+## Real-Time Broadcasting with Pusher
+
+**Date:** January 23, 2026
+**Status:** Future Enhancement (Deferred from Sprint 4 Phase 3)
+**Priority:** Medium
+**Estimated Effort:** 3-4 hours
+
+### Overview
+
+**Issue:** Sprint 4 Phase 3 "Real-time Notifications & Events" requires WebSocket broadcasting for live updates, but was deferred to keep MVP focused and reduce infrastructure complexity.
+
+**Current State:** Role changes dispatch Laravel events but UI updates require manual refresh. Toast notifications work via flash messages.
+
+### Deferred Features
+
+**What was deferred:**
+
+- Live WebSocket updates for admin dashboards
+- Real-time notifications via Laravel Echo
+- Instant UI updates after role operations
+- Broadcasting channels for multi-user admin sessions
+
+**What is working:**
+
+- ✅ Event dispatching (Laravel events fire correctly)
+- ✅ Toast notifications (via session flash messages)
+- ✅ Audit logging (comprehensive database tracking)
+- ✅ Role management (full CRUD operations)
+
+### Implementation Plan
+
+**Phase 1: Broadcasting Setup (1-2 hours)**
+
+- Install Laravel Broadcasting and Pusher/Reverb
+- Configure broadcasting driver in `.env`
+- Create broadcasting channels for admin notifications
+- Set up Redis/Pusher service configuration
+
+**Phase 2: Frontend Integration (1-2 hours)**
+
+- Install Laravel Echo and Pusher JS libraries
+- Configure Echo with authentication
+- Add real-time listeners for role change events
+- Implement live UI updates without page refresh
+
+**Phase 3: Event Broadcasting (30 minutes)**
+
+- Convert Laravel events to broadcast events
+- Add channel authorization for admin users
+- Test real-time notifications across browser sessions
+
+**Technical Requirements:**
+
+- Broadcasting driver (Pusher, Reverb, or Redis)
+- WebSocket server infrastructure
+- Additional npm packages: `laravel-echo`, `pusher-js`
+- Redis/Pusher service account
+
+### Business Value
+
+**Enhanced UX:**
+
+- Instant feedback for admin operations
+- Real-time collaboration indicators
+- Modern web application expectations met
+- Reduced need for manual page refreshes
+
+**Operational Benefits:**
+
+- Live admin activity monitoring
+- Immediate notification of security events
+- Better multi-admin workflow support
+
+### Risk Assessment
+
+**Infrastructure Complexity:**
+
+- Requires additional services (Redis/Pusher)
+- WebSocket server management
+- Increased deployment complexity
+
+**Development Overhead:**
+
+- Additional JavaScript dependencies
+- Broadcasting authentication setup
+- Cross-browser WebSocket testing
+
+**Mitigation:**
+
+- Start with Laravel Reverb (Laravel's built-in solution)
+- Gradual rollout with fallback to polling
+- Comprehensive testing for WebSocket reliability
+
+### Dependencies & Prerequisites
+
+**Before Implementation:**
+
+- Redis or Pusher service available
+- WebSocket server infrastructure ready
+- Admin authentication system stable
+- Event dispatching working correctly
+
+**Related Systems:**
+
+- Role management operations (currently working)
+- Admin authentication (currently working)
+- Audit logging (currently working)
+
+### Recommendation
+
+**Decision:** Defer Pusher implementation to post-MVP phase.
+
+**Rationale:**
+
+- Core RBAC functionality complete and working
+- MVP can launch successfully without real-time features
+- Reduces infrastructure and deployment complexity
+- Allows focus on core business value delivery
+- Real-time features are enhancement, not requirement
+
+**Trigger Conditions:**
+
+- User feedback requests real-time updates
+- Multiple admins working simultaneously
+- Performance monitoring shows polling is insufficient
+- Business requirements demand live collaboration features
+
+**Timeline:** 3-4 hours when triggered
+**Priority:** Medium (nice-to-have enhancement)
+**Business Impact:** UX improvement, not functional blocker
+
+### Related Files
+
+**Backend:**
+
+- Current: Event dispatching in `RoleAssignmentController.php`
+- Future: Broadcasting configuration, channel authorization
+- Impact: Add broadcasting to existing Laravel events
+
+**Frontend:**
+
+- Current: Manual refresh after operations
+- Future: Echo listeners in admin components
+- Impact: Add WebSocket event handling
+
+**Configuration:**
+
+- Future: `.env` broadcasting settings
+- Future: `config/broadcasting.php`
+- Future: Redis/Pusher service configuration
+
+**Testing:**
+
+- Future: WebSocket connection tests
+- Future: Real-time event broadcasting tests
+- Future: Cross-browser compatibility tests
+
+### Success Criteria
+
+- [ ] WebSocket connections establish successfully
+- [ ] Role changes broadcast to all admin sessions
+- [ ] UI updates instantly without page refresh
+- [ ] Fallback to polling when WebSocket fails
+- [ ] No performance degradation for non-admin users
+- [ ] Cross-browser WebSocket compatibility
+
+### Migration Path
+
+**From Current (Polling):**
+
+```typescript
+// Current: Manual refresh or polling
+setInterval(() => {
+    router.reload(); // Refresh every 30 seconds
+}, 30000);
+```
+
+**To Future (Real-time):**
+
+```typescript
+// Future: Live WebSocket updates
+Echo.private(`admin.${adminId}`).listen('.role.assigned', (event) => {
+    // Instant UI update
+    updateUserList(event.user);
+    showToast('Role assigned', 'success');
+});
+```
+
+This deferred implementation allows the MVP to launch with a fully functional RBAC system while keeping real-time features as a future enhancement.
