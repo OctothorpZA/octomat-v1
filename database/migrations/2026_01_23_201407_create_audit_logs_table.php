@@ -15,9 +15,9 @@ return new class extends Migration
             $table->id();
             $table->foreignId('admin_id')->constrained('users')->onDelete('cascade');
             $table->string('admin_name');
-            $table->foreignId('target_user_id')->constrained('users')->onDelete('cascade');
-            $table->string('target_user_name');
-            $table->enum('action', ['assigned', 'removed']);
+            $table->foreignId('target_user_id')->nullable()->constrained('users')->onDelete('cascade');
+            $table->string('target_user_name')->nullable();
+            $table->enum('action', ['assigned', 'removed', 'access_denied', 'failed_login', 'locked_out', '2fa_required', 'password_reset', 'session_expired']);
             $table->string('role');
             $table->string('ip_address');
             $table->text('user_agent')->nullable();

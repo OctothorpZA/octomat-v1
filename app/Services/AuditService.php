@@ -42,6 +42,37 @@ class AuditService
     }
 
     /**
+     * Log an unauthorized access attempt.
+     *
+     * @param  User  $user  The user attempting access
+     * @param  string  $path  The path they tried to access
+     * @param  string  $reason  The reason for denial
+     */
+    public function logAccessAttempt(User $user, string $path, string $reason): void
+    {
+        // Create database record for access attempts
+        AuditLog::create([
+            'admin_id' => $user->id,
+            'admin_name' => $user->name,
+            'target_user_id' => null, // No target user for access attempts
+            'target_user_name' => null,
+            'action' => 'access_denied',
+            'role' => $path,
+            'ip_address' => request()->ip(),
+            'user_agent' => request()->userAgent(),
+            'timestamp' => now(),
+        ]);
+
+        // Log to Laravel log as warning
+        Log::warning("Unauthorized access attempt: {$reason}", [
+            'user' => $user->only(['id', 'name', 'email']),
+            'path' => $path,
+            'ip' => request()->ip(),
+            'timestamp' => now()->toISOString(),
+        ]);
+    }
+
+    /**
      * Get recent audit logs for a specific user.
      */
     public function getUserAuditLogs(int $userId, int $limit = 50): \Illuminate\Database\Eloquent\Collection

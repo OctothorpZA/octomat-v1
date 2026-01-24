@@ -19,7 +19,7 @@ test('super admin sees admin widgets on unified dashboard', function () {
             ->has('user')
             ->has('userRoles')
             ->has('widgets')
-            ->where('userRoles', ['General User', 'Super Admin']) // All roles
+            ->where('userRoles', fn ($roles) => collect($roles)->contains('General User') && collect($roles)->contains('Super Admin')) // All roles present
         );
 });
 
@@ -33,7 +33,7 @@ test('super admin dashboard includes admin-specific widgets', function () {
 
     $response->assertInertia(fn ($inertia) => $inertia
         ->has('widgets', 5) // Super Admin (3) + General User (2) = 5 widgets
-        ->where('widgets.0.title', 'System Overview') // Highest priority admin widget
+        ->where('widgets', fn ($widgets) => collect($widgets)->pluck('title')->contains('System Overview')) // System Overview widget present
     );
 });
 

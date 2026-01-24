@@ -63,8 +63,8 @@ export default function AuditLog({
     const [stats, setStats] = useState(initialStats);
     const [connectionStatus, setConnectionStatus] = useState<
         'connecting' | 'connected' | 'disconnected' | 'error'
-    >('connecting');
-    const { auth } = usePage().props as any;
+    >('disconnected');
+    const { auth } = usePage().props as { auth?: { user?: { id: number } } } };
 
     // Real-time audit log updates
     useEffect(() => {
@@ -73,47 +73,63 @@ export default function AuditLog({
         setConnectionStatus('connecting');
 
         // Listen to admin channel for audit events
-        const adminChannel = (window as any).Echo.private(
-            `admin.${auth.user.id}`,
-        );
+        const adminChannel = (
+            window as Window & {
+                Echo?: {
+                    private: (channel: string) => {
+                        subscribed: (callback: () => void) => void;
+                        error: (callback: (error: Error) => void) => void;
+                        listen: (
+                            event: string,
+                            callback: (event: Record<string, unknown>) => void,
+                        ) => void;
+                    };
+                };
+            }
+        ).Echo?.private(`admin.${auth.user.id}`);
+
+        if (!adminChannel) return;
 
         adminChannel.subscribed(() => {
             console.log('Connected to admin audit channel');
             setConnectionStatus('connected');
         });
 
-        adminChannel.error((error: any) => {
+        adminChannel.error((error: Error) => {
             console.error('Admin audit channel error:', error);
             setConnectionStatus('error');
         });
 
         // Listen for role changes (which create audit logs)
-        adminChannel.listen('.role.assigned', (event: any) => {
-            // Update stats in real-time
-            setStats((prevStats) => ({
-                ...prevStats,
-                total_logs: prevStats.total_logs + 1,
-                recent_logs: prevStats.recent_logs + 1,
-                role_assignments: prevStats.role_assignments + 1,
-            }));
+        adminChannel.listen(
+            '.role.assigned',
+            (event: Record<string, unknown>) => {
+                // Update stats in real-time
+                setStats((prevStats) => ({
+                    ...prevStats,
+                    total_logs: prevStats.total_logs + 1,
+                    recent_logs: prevStats.recent_logs + 1,
+                    role_assignments: prevStats.role_assignments + 1,
+                }));
 
-            // Add new audit log entry (simulated - in real app this would come from server)
-            const newLog: AuditLog = {
-                id: Date.now(),
-                admin_name: event.admin.name,
-                target_user_name: event.user.name,
-                action: 'assigned',
-                role: event.role,
-                ip_address: '127.0.0.1', // Would come from server
-                timestamp: new Date().toISOString(),
-            };
+                // Add new audit log entry (simulated - in real app this would come from server)
+                const newLog: AuditLog = {
+                    id: Date.now(),
+                    admin_name: event.admin.name,
+                    target_user_name: event.user.name,
+                    action: 'assigned',
+                    role: event.role,
+                    ip_address: '127.0.0.1', // Would come from server
+                    timestamp: new Date().toISOString(),
+                };
 
-            setAuditLogs((prevLogs) => ({
-                ...prevLogs,
-                data: [newLog, ...prevLogs.data],
-                total: prevLogs.total + 1,
-            }));
-        });
+                setAuditLogs((prevLogs) => ({
+                    ...prevLogs,
+                    data: [newLog, ...prevLogs.data],
+                    total: prevLogs.total + 1,
+                }));
+            },
+        );
 
         adminChannel.listen('.role.removed', (event: any) => {
             // Update stats in real-time

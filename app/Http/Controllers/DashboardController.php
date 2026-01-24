@@ -34,6 +34,19 @@ class DashboardController extends Controller
         ]);
     }
 
+    public function admin(Request $request): Response
+    {
+        $statsService = app(\App\Services\DashboardStatsService::class);
+
+        $stats = $statsService->getAdminStats();
+        $performanceMetrics = $statsService->getPerformanceMetrics();
+
+        return Inertia::render('admin/dashboard', [
+            'stats' => $stats,
+            'performanceMetrics' => $performanceMetrics,
+        ]);
+    }
+
     private function getWidgetsForRole(string $role, $user): array
     {
         return match ($role) {
