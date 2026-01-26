@@ -102,19 +102,22 @@ class RoleBasedRedirect
      */
     private function handleMultiRoleConflicts(Request $request, $user): ?Response
     {
-        $userRoles = $user->roles->pluck('name')->toArray();
+        // TODO Sprint 5: Re-enable multi-role conflict handling with role selection UI
+        // Disabled for MVP - allow multi-role assignments
+
+        // $userRoles = $user->roles->pluck('name')->toArray();
 
         // Check for conflicting role combinations
-        $conflicts = $this->detectRoleConflicts($userRoles);
+        // $conflicts = $this->detectRoleConflicts($userRoles);
 
-        if (! empty($conflicts)) {
-            // If accessing sensitive areas with conflicts, redirect to role selection
-            if ($request->is('admin/*') || $request->is('academy/*') || $request->is('club/*')) {
-                return redirect()->route('dashboard')
-                    ->with('warning', 'You have multiple roles. Please select your primary context.')
-                    ->with('role_conflicts', $conflicts);
-            }
-        }
+        // if (! empty($conflicts)) {
+        // If accessing sensitive areas with conflicts, redirect to role selection
+        //    if ($request->is('admin/*') || $request->is('academy/*') || $request->is('club/*')) {
+        //        return redirect()->route('dashboard')
+        //            ->with('warning', 'You have multiple roles. Please select your primary context.')
+        //            ->with('role_conflicts', $conflicts);
+        //    }
+        // }
 
         return null;
     }

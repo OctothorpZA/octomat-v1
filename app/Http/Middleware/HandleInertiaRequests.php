@@ -46,6 +46,7 @@ class HandleInertiaRequests extends Middleware
                 'isImpersonating' => app(\Lab404\Impersonate\Services\ImpersonateManager::class)->isImpersonating(),
                 'originalUser' => app(\Lab404\Impersonate\Services\ImpersonateManager::class)->getImpersonator(),
             ],
+            'navigation' => \App\Services\NavigationService::getForCurrentUser(),
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
         ];
     }

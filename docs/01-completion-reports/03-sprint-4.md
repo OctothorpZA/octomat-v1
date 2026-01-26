@@ -360,6 +360,40 @@ Successfully completed the enterprise RBAC system by implementing all advanced f
 
 ---
 
+## Sprint 4 Extension: FormRequests Implementation & Cleanup
+
+### FormRequests Standardization
+
+- ✅ **Dedicated FormRequests** (`app/Http/Requests/Admin/RoleAssignRequest.php`, `RoleRemoveRequest.php`)
+    - Replaced inline `$request->validate()` in `RoleAssignmentController@assign/remove` (lines 62,118)
+    - Rules: `selectedUser` (required,exists:users,id), `selectedRole` (required,string,exists:roles,name)
+    - Authorization: `$this->user()?->hasRole('Super Admin') ?? false`
+    - Controller now uses typed signatures (`RoleAssignRequest $request`) and `$request->validated()`
+    - Ensures Laravel 12 best practices (FormRequests over inline validation)
+
+### Commit c947406061d1d894184c5ca3a1947ba018a0fdcb Items
+
+- ✅ **AI Agent Guidelines**: Added `.github/copilot-instructions.md` (664 lines), expanded `CLAUDE.md` (+303 lines) with architecture guidance
+- ✅ **Code Refinements**:
+  | File | Changes |
+  |------|---------|
+  | `RoleAssignmentController.php` | Robust search/validation, fixed imports (+151/- changes) |
+  | `AuthServiceProvider.php` | Clean gates (+24/-) |
+  | `NavigationService.php` | Removed dev comments (+12/-) |
+  | `admin/audit-log.tsx`, `role-assignment.tsx` | Clarity improvements (+648/-) |
+- ✅ **Housekeeping**: `.gitignore` (+1), tech debt docs (+1)
+
+**Updated Completion Date:** January 26, 2026  
+**Tests:** 117/117 passing (RoleTest.php verified)
+
+## Post-Sprint 4 Refinements
+
+- ✅ **FormRequests**: RoleAssignRequest/RoleRemoveRequest (validation/authorize Super Admin)
+- ✅ **Sidebar Merge**: navigation-sidebar → app-sidebar (dynamic service, Collapsible/Icon/Dropdown)
+- ✅ **NavigationService Share**: Middleware HandleInertiaRequests props.navigation
+- ✅ **Multi-role Conflicts**: RoleBasedRedirect middleware (disabled for MVP, TODO Sprint 5)
+- ✅ **Lint/Types**: 100% pass post-merge
+
 ## Conclusion
 
 Sprint 4 successfully transformed the RBAC foundation into a complete enterprise-grade system with advanced search, comprehensive audit logging, real-time notifications, custom middleware, sophisticated navigation, and real database analytics. The implementation exceeded the original plan with superior architectural decisions, enhanced user experience features, and robust security implementations.

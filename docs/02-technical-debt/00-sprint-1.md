@@ -610,4 +610,4 @@ The Sprint 1 user identity foundation is now **complete and consistent**:
 **Report Updated:** Post-Extended Sprint 2
 **Technical Debt Level:** Low (Name consistency resolved)
 **Next Critical Milestone:** Sprint 5 Search Optimization</content>
-<parameter name="filePath">/Users/mansoergallie/Documents/ITWS/WiP/OITWS/octomat-dev/docs/02-technical-debt/00-sprint-1.md
+<parameter name="filePath">./docs/02-technical-debt/00-sprint-1.md

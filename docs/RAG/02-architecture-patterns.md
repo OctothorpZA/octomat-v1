@@ -124,6 +124,54 @@ class DashboardController extends Controller
 
 ### 4. Service Layer Pattern (Future Extension)
 
+### 5. Form Requests Pattern (Sprint 4)
+
+All form validation through dedicated Form Requests.
+
+**RoleAssignRequest** (`app/Http/Requests/Admin/RoleAssignRequest.php`):
+
+```php
+public function rules(): array
+{
+    return [
+        'selectedUser' => ['required', 'exists:users,id'],
+        'selectedRole' => ['required', 'string', 'exists:roles,name'],
+    ];
+}
+
+public function authorize(): bool
+{
+    return $this->user()?->hasRole('Super Admin') ?? false;
+}
+```
+
+**RoleBasedRedirect Middleware** (`app/Http/Middleware/RoleBasedRedirect.php`):
+Multi-role conflict detection, dashboard redirect with warning (disabled for MVP).
+
+### 5. Form Requests Pattern (Sprint 4)
+
+Dedicated Form Request classes for all validation and authorization.
+
+**RoleAssignRequest** (`app/Http/Requests/Admin/RoleAssignRequest.php`):
+
+```php
+public function rules(): array
+{
+    return [
+        'selectedUser' => ['required', 'exists:users,id'],
+        'selectedRole' => ['required', 'string', 'exists:roles,name'],
+    ];
+}
+
+public function authorize(): bool
+{
+    return $this->user()?->hasRole('Super Admin') ?? false;
+}
+```
+
+**RoleBasedRedirect Middleware** (`app/Http/Middleware/RoleBasedRedirect.php`):
+Multi-role conflict detection, dashboard redirect with warning.
+
 ```php
 class ProfileService
 {

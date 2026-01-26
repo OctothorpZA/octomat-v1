@@ -111,6 +111,15 @@ Custom React hooks for shared logic.
 - `use-initials.tsx` - User initials generation
 - `use-mobile.tsx` - Mobile detection hook
 
+### Navigation Components (Updated Sprint 4)
+
+- `app-sidebar.tsx` - Merged dynamic sidebar (NavigationService server props, Collapsible submenus, Icon mapper, Dropdown user, role-aware)
+    - Dynamic nav from shared props
+    - Collapsible groups for multi-level nav
+    - Icon mapping (28 lucide icons)
+    - User dropdown (profile/appearance/logout)
+    - Original NavMain/NavFooter/NavUser preserved as fallback
+
 ## Key Component Patterns
 
 ### Button Component
@@ -159,6 +168,15 @@ export default function Dashboard() {
     );
 }
 ```
+
+## Navigation Components (Sprint 4 Update)
+
+- `app-sidebar.tsx`: Merged dynamic sidebar from NavigationService (server props, Collapsible submenus, Icon mapper, Dropdown user menu, role-aware filtering)
+    - Dynamic nav union from all user roles
+    - Collapsible groups for hierarchical nav
+    - 28 lucide icons mapped
+    - Original NavMain/NavFooter/NavUser preserved as fallback
+    - Header controlled by AppLogo component
 
 ## Custom Hooks
 

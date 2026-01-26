@@ -254,6 +254,18 @@ export * from './shared';
 
 **Next Review:** Re-evaluate when type definitions exceed 100 lines or when team size increases to 3+ developers.
 
+## Role Selector UI (Optional Future)
+
+**Status:** Optional Enhancement  
+**Priority:** Low  
+**Effort:** 2 hours
+
+**Current:** Intelligent union nav shows all role sections (Coach Training + Athlete My Sports + Parent Family).
+
+**Future:** Role selector dropdown for context switch (if multi-role UX feedback requires).
+
+**Decision:** Monitor user feedback. Implement if union nav insufficient.
+
 ---
 
 **Document Version:** 1.0
@@ -484,3 +496,19 @@ Echo.private(`admin.${adminId}`).listen('.role.assigned', (event) => {
 ```
 
 This deferred implementation allows the MVP to launch with a fully functional RBAC system while keeping real-time features as a future enhancement.
+
+## Sidebar Cleanup (Post-Merge)
+
+**Date:** January 26, 2026  
+**Status:** Future Cleanup (Sprint 5+)  
+**Priority:** Low  
+**Effort:** 5 minutes
+
+- ✅ **Merged:** All `navigation-sidebar.tsx` features into `app-sidebar.tsx` (dynamic nav, Collapsible, Icon mapper, Dropdown user).
+- **TODO:** Delete `resources/js/components/navigation-sidebar.tsx` after validation (unused prototype).
+- **Trigger:** Confirm app-sidebar stable (no bugs), no need revert.
+- **Risk:** None (features merged, git history preserved).
+- **Success:** Clean components dir, no dups.
+
+**Owner:** Development Team  
+**Next Review:** Sprint 5 planning

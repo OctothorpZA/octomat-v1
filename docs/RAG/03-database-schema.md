@@ -195,6 +195,30 @@ CREATE TABLE role_has_permissions (
 );
 ```
 
+## Audit Logs Table (Sprint 4)
+
+```sql
+CREATE TABLE audit_logs (
+    id SERIAL PRIMARY KEY,
+    user_id BIGINT REFERENCES users(id),
+    action VARCHAR(255),
+    subject_type VARCHAR(255),
+    subject_id BIGINT,
+    old_values JSONB,
+    new_values JSONB,
+    created_at TIMESTAMP
+);
+
+CREATE INDEX audit_logs_user_id_idx ON audit_logs (user_id);
+CREATE INDEX audit_logs_action_idx ON audit_logs (action);
+CREATE INDEX audit_logs_created_at_idx ON audit_logs (created_at);
+```
+
+**Relationships:**
+
+- `AuditLog` belongsTo `User`
+- Query by user/action/date for admin dashboard
+
 ## RBAC Models
 
 ### Role Model
@@ -244,5 +268,30 @@ CREATE TABLE role_has_permissions (
 1. `0001_01_01_000000_create_users_table.php` - Base user table
 2. `0001_01_01_000001_create_cache_table.php` - Cache support
 3. `0001_01_01_000002_create_jobs_table.php` - Queue support
-4. `2025_08_26_100418_add_two_factor_columns_to_users_table.php` - 2FA fields</content>
-   <parameter name="filePath">docs/RAG/database-schema.md
+4. `2025_08_26_100418_add_two_factor_columns_to_users_table.php` - 2FA fields
+5. `2025_01_26_000000_create_audit_logs_table.php` - Audit trail (user actions, role changes)
+
+### Audit Logs Table
+
+```sql
+CREATE TABLE audit_logs (
+    id SERIAL PRIMARY KEY,
+    user_id BIGINT REFERENCES users(id),
+    action VARCHAR(255),
+    subject_type VARCHAR(255),
+    subject_id BIGINT,
+    old_values JSONB,
+    new_values JSONB,
+    created_at TIMESTAMP
+);
+
+CREATE INDEX audit_logs_user_id_idx ON audit_logs (user_id);
+CREATE INDEX audit_logs_action_idx ON audit_logs (action);
+CREATE INDEX audit_logs_created_at_idx ON audit_logs (created_at);
+```
+
+**Relationships:**
+
+- `AuditLog` belongsTo `User`
+- Query by user/action/date for admin dashboard</content>
+  <parameter name="filePath">docs/RAG/database-schema.md

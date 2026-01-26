@@ -140,6 +140,37 @@ test('password validation rules', function (string $password, bool $shouldPass) 
 ]);
 ```
 
+### RoleTest (15 Tests)
+
+**File**: `tests/Feature/Admin/RoleTest.php`
+
+Tests role assignment, removal, authorization, validation, conflicts, hierarchy.
+
+```php
+test('super admin can assign roles', function () {
+    // Super Admin → Coach Johnson 'Parent/Guardian' success
+    $this->actingAs($superAdmin)
+        ->post(route('admin.roles.assign.post'), [
+            'selectedUser' => $coach->id,
+            'selectedRole' => 'Parent/Guardian',
+        ])
+        ->assertRedirect()
+        ->assertSessionHas('success');
+});
+```
+
+### RoleTest (Sprint 4)
+
+**File**: `tests/Feature/Admin/RoleTest.php` (15 tests)
+
+Tests role assignment, removal, authorization, validation, conflicts, hierarchy.
+
+- Super Admin assign success
+- Hierarchy validation
+- Conflict detection
+- Duplicate prevention
+- Self-assignment block
+
 ## Model Factories
 
 ### User Factory

@@ -7,6 +7,19 @@ use App\Models\User;
 class NavigationService
 {
     /**
+     * Get navigation for current authenticated user.
+     */
+    public static function getForCurrentUser(): array
+    {
+        $user = auth()->user();
+        if (! $user) {
+            return [];
+        }
+
+        return app(static::class)->getNavigationForUser($user);
+    }
+
+    /**
      * Get navigation menu for a user based on their roles and permissions.
      */
     public function getNavigationForUser(User $user): array

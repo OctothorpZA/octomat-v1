@@ -222,4 +222,4 @@ Successfully migrated the user profile system from Livewire/Blade to React/Inert
 **Sprint 1 Status: ✅ SUCCESSFULLY COMPLETED**
 
 The foundation is now in place for building robust user identity management features in the modern React/Inertia.js architecture, with comprehensive testing and documented technical debt considerations.</content>
-<parameter name="filePath">/Users/mansoergallie/Documents/ITWS/WiP/OITWS/octomat-dev/docs/01-completion-reports/00-sprint-1.md
+<parameter name="filePath">./docs/01-completion-reports/00-sprint-1.md

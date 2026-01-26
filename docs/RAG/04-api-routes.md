@@ -80,6 +80,18 @@ Route::middleware(['auth', 'verified'])->group(function () {
 });
 ```
 
+## Admin Routes (Sprint 4)
+
+```php
+Route::middleware(['auth', 'role:Super Admin'])->prefix('admin')->group(function () {
+    Route::get('/roles/assign', [RoleAssignmentController::class, 'index'])
+        ->name('admin.roles.assign')
+        ->middleware('can:assign-roles');
+    Route::post('/roles/assign', [RoleAssignmentController::class, 'assign'])
+        ->name('admin.roles.assign.post');
+});
+```
+
 ## Controllers
 
 ### DashboardController

@@ -83,7 +83,7 @@ test('non-super admin cannot assign super admin role', function () {
         ->assertRedirect('/dashboard'); // Middleware redirects non-authorized users
 });
 
-test('super admins can assign any role to themselves', function () {
+test('super admins cannot assign high-level roles to themselves for security', function () {
     $this->seed(\Database\Seeders\RoleSeeder::class);
 
     $admin = User::factory()->create();
@@ -95,7 +95,7 @@ test('super admins can assign any role to themselves', function () {
             'selectedRole' => 'Federation Admin', // Level 900
         ])
         ->assertRedirect()
-        ->assertSessionHas('success');
+        ->assertSessionHasErrors(['authorization']);
 });
 
 test('cannot assign roles above your authority level', function () {
