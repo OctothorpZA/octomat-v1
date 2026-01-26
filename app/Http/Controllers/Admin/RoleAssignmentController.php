@@ -7,33 +7,44 @@ use App\Events\RoleRemoved;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Services\AuditService;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Spatie\Permission\Models\Role;
 
 class RoleAssignmentController extends Controller
 {
+    /**
+     * Display the user list with role assignment capabilities.
+     */
     public function index(Request $request): \Inertia\Response
     {
         $query = User::with('roles')
             ->select('id', 'first_name', 'middle_names', 'last_name', 'email');
 
-        // Add real-time search functionality
+        // Robust database-agnostic search (First + Middle + Last)
         if ($request->filled('search')) {
             $search = $request->search;
+
             $query->where(function ($q) use ($search) {
-                $q->where('first_name', 'like', "%{$search}%")
-                    ->orWhere('last_name', 'like', "%{$search}%")
-                    ->orWhere('email', 'like', "%{$search}%");
+                $q->whereRaw('LOWER(first_name) LIKE LOWER(?)', ["%{$search}%"])
+                    ->orWhereRaw('LOWER(middle_names) LIKE LOWER(?)', ["%{$search}%"])
+                    ->orWhereRaw('LOWER(last_name) LIKE LOWER(?)', ["%{$search}%"])
+                    ->orWhereRaw(
+                        "LOWER(CONCAT(COALESCE(first_name, ''), ' ', COALESCE(middle_names, ''), ' ', COALESCE(last_name, ''))) LIKE LOWER(?)",
+                        ["%{$search}%"]
+                    )
+                    ->orWhereRaw(
+                        "LOWER(CONCAT(COALESCE(first_name, ''), ' ', COALESCE(last_name, ''))) LIKE LOWER(?)",
+                        ["%{$search}%"]
+                    )
+                    ->orWhereRaw('LOWER(email) LIKE LOWER(?)', ["%{$search}%"]);
             });
         }
 
-        // Add role filtering
+        // Filter by specific role
         if ($request->filled('role')) {
-            $role = $request->role;
-            $query->whereHas('roles', function ($q) use ($role) {
-                $q->where('name', $role);
-            });
+            $query->whereHas('roles', fn ($q) => $q->where('name', $request->role));
         }
 
         return Inertia::render('admin/role-assignment', [
@@ -43,112 +54,118 @@ class RoleAssignmentController extends Controller
         ]);
     }
 
-    public function assign(Request $request)
+    /**
+     * Assign a new role to a user with hierarchy and conflict checks.
+     */
+    public function assign(Request $request): RedirectResponse
     {
         $validated = $request->validate([
             'selectedUser' => 'required|exists:users,id',
-            'selectedRole' => 'required|string',
+            'selectedRole' => 'required|string|exists:roles,name',
         ]);
 
-        // Find user and role
-        $user = User::find($validated['selectedUser']);
-        $role = Role::where('name', $validated['selectedRole'])->first();
+        $user = User::findOrFail($validated['selectedUser']);
+        $role = Role::where('name', $validated['selectedRole'])->firstOrFail();
+        $currentUser = $request->user();
 
-        if (! $role) {
-            return back()->withErrors(['role' => 'Role not found']);
+        // 1. Authorization: Prevent self-assignment of high-level roles
+        if ($currentUser->id === $user->id && $role->level >= 900) {
+            return back()->withErrors(['authorization' => 'Security: Cannot assign high-level administrative roles to yourself.']);
         }
 
-        // Check role level hierarchy (assignee cannot assign higher-level roles)
-        if ($request->user()->getHighestRoleLevel() <= $role->level && ! $request->user()->hasRole('Super Admin')) {
-            return back()->withErrors(['authorization' => 'Cannot assign roles at or above your authority level']);
+        // 2. Authorization: Hierarchy check (cannot assign roles above own level)
+        if ($currentUser->getHighestRoleLevel() <= $role->level && ! $currentUser->hasRole('Super Admin')) {
+            return back()->withErrors(['authorization' => 'Access Denied: Cannot assign roles at or above your own authority level.']);
         }
 
-        // Check for existing conflicting roles (prevent similar level assignments)
-        $conflictingRoles = $user->roles->filter(function ($existingRole) use ($role) {
-            return abs($existingRole->level - $role->level) < 100 && $existingRole->name !== $role->name;
-        });
-
-        if ($conflictingRoles->isNotEmpty()) {
-            $conflictNames = $conflictingRoles->pluck('display_name')->join(', ');
-
-            return back()->withErrors(['conflict' => "Cannot assign this role. User already has conflicting roles: {$conflictNames}"]);
-        }
-
-        // Check if user already has this role (prevent duplicates)
-        if ($user->hasRole($validated['selectedRole'])) {
-            return redirect()->back()->withErrors(['role' => 'User already has this role assigned.']);
-        }
-
-        // Execute role assignment (add role without removing existing ones)
-        $user->assignRole($validated['selectedRole']);
-
-        // Log the audit trail
-        app(AuditService::class)->logRoleChange(
-            $request->user(),
-            $user,
-            'assigned',
-            $validated['selectedRole']
+        // 3. Validation: Prevent conflicting roles (similar hierarchy levels)
+        $conflicting = $user->roles->filter(fn ($r) => abs($r->level - $role->level) < 100 && $r->name !== $role->name
         );
 
-        // Dispatch broadcast event for real-time updates
-        RoleAssigned::dispatch($user, $validated['selectedRole'], $request->user());
+        if ($conflicting->isNotEmpty()) {
+            $names = $conflicting->pluck('display_name')->join(', ');
 
-        return redirect()->back()->with('success', 'Role assigned successfully!');
+            return back()->withErrors(['conflict' => "Conflict: User already has roles within this tier: {$names}"]);
+        }
+
+        // 4. Validation: Prevent duplicate assignment
+        if ($user->hasRole($role->name)) {
+            return back()->withErrors(['role' => 'This user already holds the selected role.']);
+        }
+
+        // Execution
+        $user->assignRole($role);
+
+        // Audit Trail
+        app(AuditService::class)->logRoleChange(
+            $currentUser,
+            $user,
+            'assigned',
+            $role->name
+        );
+
+        // Real-time Event
+        RoleAssigned::dispatch($user, $role->name, $currentUser);
+
+        return back()->with('success', "Role '{$role->display_name}' assigned to {$user->first_name} successfully.");
     }
 
-    public function remove(Request $request)
+    /**
+     * Remove a role from a user.
+     */
+    public function remove(Request $request): RedirectResponse
     {
         $validated = $request->validate([
             'selectedUser' => 'required|exists:users,id',
-            'selectedRole' => 'required|string',
+            'selectedRole' => 'required|string|exists:roles,name',
         ]);
 
-        // Find user
-        $user = User::find($validated['selectedUser']);
+        $user = User::findOrFail($validated['selectedUser']);
+        $roleName = $validated['selectedRole'];
 
-        // Execute role removal
-        $user->removeRole($validated['selectedRole']);
+        if (! $user->hasRole($roleName)) {
+            return back()->withErrors(['role' => 'User does not possess this role.']);
+        }
 
-        // Log the audit trail
+        $user->removeRole($roleName);
+
         app(AuditService::class)->logRoleChange(
             $request->user(),
             $user,
             'removed',
-            $validated['selectedRole']
+            $roleName
         );
 
-        // Dispatch broadcast event for real-time updates
-        RoleRemoved::dispatch($user, $validated['selectedRole'], $request->user());
+        RoleRemoved::dispatch($user, $roleName, $request->user());
 
-        return redirect()->back()->with('success', 'Role removed successfully!');
+        return back()->with('success', 'Role removed successfully.');
     }
 
-    public function audit(Request $request)
+    /**
+     * Display role change audit logs.
+     */
+    public function audit(Request $request): \Inertia\Response
     {
-        $auditLogs = app(AuditService::class)->getAuditLogs($request->get('page', 1));
-        $stats = app(AuditService::class)->getAuditStats();
+        $page = $request->integer('page', 1);
 
         return Inertia::render('admin/audit-log', [
-            'auditLogs' => $auditLogs,
-            'stats' => $stats,
+            'auditLogs' => app(AuditService::class)->getAuditLogs($page),
+            'stats' => app(AuditService::class)->getAuditStats(),
         ]);
     }
 
+    /**
+     * Dynamically fetch roles from the database.
+     */
     private function getAvailableRoles(): array
     {
-        return [
-            'Super Admin' => 'System Administrator',
-            'Federation Admin' => 'Federation Administrator',
-            'Event Organiser' => 'Event Organiser',
-            'Affiliate Manager' => 'Affiliate Manager',
-            'Academy Owner' => 'Academy Owner',
-            'Club Manager' => 'Club Manager',
-            'Club Admin' => 'Club Administrator',
-            'Coach' => 'Coach',
-            'Parent/Guardian' => 'Parent/Guardian',
-            'Athlete' => 'Athlete',
-            'Event Staff' => 'Event Staff',
-            'General User' => 'General User',
-        ];
+        return Role::orderBy('level', 'desc')
+            ->get()
+            ->mapWithKeys(function ($role) {
+                $display = $role->display_name ?: str_replace(['-', '_'], ' ', ucwords($role->name, '-_'));
+
+                return [$role->name => $display];
+            })
+            ->toArray();
     }
 }

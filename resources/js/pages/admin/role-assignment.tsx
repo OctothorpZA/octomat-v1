@@ -1,10 +1,17 @@
-import { Head, Link, router, usePage } from '@inertiajs/react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
-import React, { useEffect, useState } from 'react';
+import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
+import { ChevronLeft, ChevronRight, Loader2, X } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 import {
     Table,
     TableBody,
@@ -17,6 +24,14 @@ import { useDebounce } from '@/hooks/use-debounce';
 import AppLayout from '@/layouts/app-layout';
 import { assign } from '@/routes/admin/roles';
 import { type BreadcrumbItem } from '@/types';
+
+// ── Interfaces ──────────────────────────────────────────────────────────────
+
+interface BroadcastEvent {
+    admin: { id: number; name: string; email: string };
+    user: { id: number; name: string; email: string };
+    role: string;
+}
 
 interface Role {
     id: number;
@@ -34,24 +49,6 @@ interface User {
     roles: Role[];
 }
 
-interface RoleAssignmentProps {
-    users: PaginatedUsers;
-    roles: Record<string, string>;
-    filters: {
-        search?: string;
-        role?: string;
-    };
-}
-
-interface User {
-    id: number;
-    first_name?: string;
-    middle_names?: string | null;
-    last_name?: string;
-    email: string;
-    roles: Role[];
-}
-
 interface PaginationLinks {
     url: string | null;
     label: string;
@@ -65,6 +62,8 @@ interface PaginatedUsers {
     per_page: number;
     total: number;
     links: PaginationLinks[];
+    prev_page_url: string | null;
+    next_page_url: string | null;
 }
 
 interface RoleAssignmentProps {
@@ -76,295 +75,333 @@ interface RoleAssignmentProps {
     };
 }
 
+// ── Component ───────────────────────────────────────────────────────────────
+
 export default function RoleAssignment({
     users: initialUsers,
     roles,
     filters,
 }: RoleAssignmentProps) {
     const [search, setSearch] = useState(filters?.search || '');
-    const [roleFilter, setRoleFilter] = useState<string>(filters?.role || '');
+    const [roleFilter, setRoleFilter] = useState(filters?.role || '');
     const [users, setUsers] = useState(initialUsers);
     const [connectionStatus, setConnectionStatus] = useState<
         'connecting' | 'connected' | 'disconnected' | 'error'
     >('connecting');
-    const debouncedSearch = useDebounce(search, 300);
-    const { auth } = usePage().props as any;
+    const [processingId, setProcessingId] = useState<number | null>(null);
 
-    // Auto-submit search with debouncing
+    const debouncedSearch = useDebounce(search, 300);
+    const { auth } = usePage().props as { auth?: { user?: { id: number } } };
+
+    const assignForm = useForm({
+        selectedUser: '',
+        selectedRole: '',
+    });
+
+    // Sync prop changes
     useEffect(() => {
+        setUsers(initialUsers);
+    }, [initialUsers]);
+
+    // Debounced filter updates
+    useEffect(() => {
+        const currentParams = new URLSearchParams(window.location.search);
+        const currentSearch = currentParams.get('search') || '';
+        const currentRole = currentParams.get('role') || '';
+
+        if (debouncedSearch === currentSearch && roleFilter === currentRole) {
+            return;
+        }
+
         router.get(
-            '/admin/roles/assign',
-            {
-                search: debouncedSearch,
-                role: roleFilter,
-            },
+            assign().url, // ← using named route (v1 style); fallback: '/admin/roles/assign'
+            { search: debouncedSearch, role: roleFilter },
             {
                 preserveState: true,
+                preserveScroll: true,
                 replace: true,
-            },
+                only: ['users', 'filters'],
+            }
         );
     }, [debouncedSearch, roleFilter]);
 
-    // Real-time broadcasting listeners
+    // Real-time updates
     useEffect(() => {
-        if (!auth?.user?.id) return;
+        if (!auth?.user?.id || !(window as any).Echo) return;
 
         setConnectionStatus('connecting');
 
         const channel = (window as any).Echo.private(`admin.${auth.user.id}`);
 
-        // Connection established
-        channel.subscribed(() => {
-            console.log('Connected to real-time admin channel');
-            setConnectionStatus('connected');
-        });
+        channel
+            .subscribed(() => {
+                console.log('Connected to real-time admin channel');
+                setConnectionStatus('connected');
+            })
+            .error(() => setConnectionStatus('error'));
 
-        // Connection error
-        channel.error((error: any) => {
-            console.error('Real-time connection error:', error);
-            setConnectionStatus('error');
-            if ((window as any).showToast) {
-                (window as any).showToast('Real-time connection lost', 'error');
-            }
-        });
-
-        // Listen for role assignment events
-        channel.listen('.role.assigned', (event: any) => {
-            console.log('Role assigned:', event);
-
-            // Show toast notification
-            if ((window as any).showToast) {
-                (window as any).showToast(
-                    `Role "${event.role}" assigned to ${event.user.name}`,
-                    'success',
-                );
-            }
-
-            // Update user data directly without page reload
-            setUsers((currentUsers) => ({
-                ...currentUsers,
-                data: currentUsers.data.map((user) =>
-                    user.id === event.user.id
+        channel.listen('.role.assigned', (event: BroadcastEvent) => {
+            setUsers((prev) => ({
+                ...prev,
+                data: prev.data.map((u) =>
+                    u.id === event.user.id
                         ? {
-                              ...user,
+                              ...u,
                               roles: [
-                                  ...user.roles,
+                                  ...u.roles,
                                   {
-                                      id: Date.now(),
+                                      id: Date.now(), // temp ID for React key
                                       name: event.role,
-                                      display_name: event.role,
+                                      display_name: roles[event.role] || event.role,
                                   },
                               ],
                           }
-                        : user,
+                        : u
                 ),
             }));
+
+            (window as any).showToast?.(
+                `Role "${event.role}" assigned to ${event.user.name}`,
+                'success'
+            );
         });
 
-        // Listen for role removal events
-        channel.listen('.role.removed', (event: any) => {
-            console.log('Role removed:', event);
-
-            // Show toast notification
-            if ((window as any).showToast) {
-                (window as any).showToast(
-                    `Role "${event.role}" removed from ${event.user.name}`,
-                    'info',
-                );
-            }
-
-            // Update user data directly without page reload
-            setUsers((currentUsers) => ({
-                ...currentUsers,
-                data: currentUsers.data.map((user) =>
-                    user.id === event.user.id
+        channel.listen('.role.removed', (event: BroadcastEvent) => {
+            setUsers((prev) => ({
+                ...prev,
+                data: prev.data.map((u) =>
+                    u.id === event.user.id
                         ? {
-                              ...user,
-                              roles: user.roles.filter(
-                                  (role) => role.name !== event.role,
-                              ),
+                              ...u,
+                              roles: u.roles.filter((r) => r.name !== event.role),
                           }
-                        : user,
+                        : u
                 ),
             }));
+
+            (window as any).showToast?.(
+                `Role "${event.role}" removed from ${event.user.name}`,
+                'info'
+            );
         });
 
-        // Cleanup on unmount
         return () => {
             setConnectionStatus('disconnected');
             (window as any).Echo.leave(`admin.${auth.user.id}`);
         };
-    }, [auth?.user?.id]);
+    }, [auth?.user?.id, roles]);
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleGlobalAssign = (e: React.FormEvent) => {
         e.preventDefault();
-        router.post(assign().url, {});
+        assignForm.post(assign().url, {
+            preserveScroll: true,
+            onSuccess: () => assignForm.reset(),
+        });
+    };
+
+    const handleInlineAssign = (userId: number, roleName: string) => {
+        if (!roleName) return;
+        setProcessingId(userId);
+        router.post(
+            assign().url,
+            { selectedUser: userId, selectedRole: roleName },
+            {
+                preserveScroll: true,
+                onFinish: () => setProcessingId(null),
+            }
+        );
+    };
+
+    const handleRemove = (userId: number, roleName: string) => {
+        if (!confirm(`Remove the "${roles[roleName] || roleName}" role from this user?`)) return;
+        setProcessingId(userId);
+        router.post(
+            '/admin/roles/remove',
+            { selectedUser: userId, selectedRole: roleName },
+            {
+                preserveScroll: true,
+                onFinish: () => setProcessingId(null),
+            }
+        );
+    };
+
+    const clearFilters = () => {
+        setSearch('');
+        setRoleFilter('');
     };
 
     const breadcrumbs: BreadcrumbItem[] = [
-        {
-            title: 'Admin',
-            href: '/admin',
-        },
-        {
-            title: 'Role Assignment',
-            href: assign().url,
-        },
+        { title: 'Admin', href: '/admin' },
+        { title: 'Role Assignment', href: assign().url },
     ];
+
+    // ── Precise showing range (restored from v1) ─────────────────────────────
+    const from = users.data.length > 0 ? (users.current_page - 1) * users.per_page + 1 : 0;
+    const to = users.data.length > 0 ? Math.min(users.current_page * users.per_page, users.total) : 0;
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Role Assignment" />
-            <div className="space-y-6">
+
+            <div className="space-y-6 p-6">
+                {/* Header */}
                 <div className="flex items-center justify-between">
                     <div>
-                        <h1 className="text-2xl font-bold">Role Assignment</h1>
+                        <h1 className="text-2xl font-bold tracking-tight">Role Assignment</h1>
                         <p className="text-muted-foreground">
-                            Assign roles to users in the system.
+                            Manage user permissions and access levels.
                         </p>
                     </div>
-                    <div className="flex items-center space-x-2">
-                        <Badge
-                            variant={
-                                connectionStatus === 'connected'
-                                    ? 'default'
-                                    : connectionStatus === 'connecting'
-                                      ? 'secondary'
-                                      : 'destructive'
-                            }
-                            className="text-xs"
-                        >
-                            {connectionStatus === 'connected' && '🟢 Live'}
-                            {connectionStatus === 'connecting' &&
-                                '🟡 Connecting'}
-                            {connectionStatus === 'disconnected' &&
-                                '⚪ Disconnected'}
-                            {connectionStatus === 'error' &&
-                                '🔴 Connection Error'}
-                        </Badge>
-                    </div>
+                    <Badge
+                        variant={
+                            connectionStatus === 'connected'
+                                ? 'default'
+                                : connectionStatus === 'connecting'
+                                  ? 'secondary'
+                                  : 'destructive'
+                        }
+                    >
+                        {connectionStatus === 'connected' && '🟢 Live'}
+                        {connectionStatus === 'connecting' && '🟡 Connecting'}
+                        {connectionStatus === 'disconnected' && '⚪ Disconnected'}
+                        {connectionStatus === 'error' && '🔴 Connection Error'}
+                    </Badge>
                 </div>
 
-                {/* Search and Filter Controls */}
+                {/* Filters */}
                 <Card>
-                    <CardHeader>
-                        <CardTitle>Search & Filter Users</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="flex flex-col space-y-4 md:flex-row md:space-y-0 md:space-x-4">
-                            <div className="flex-1">
-                                <label
-                                    htmlFor="search"
-                                    className="mb-1 block text-sm font-medium text-gray-700"
-                                >
+                    <CardContent className="pt-6">
+                        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                            <div>
+                                <label className="block text-sm font-medium mb-1.5">
                                     Search Users
                                 </label>
                                 <input
-                                    id="search"
                                     type="text"
                                     value={search}
                                     onChange={(e) => setSearch(e.target.value)}
-                                    placeholder="Search by name or email..."
-                                    className="w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                    placeholder="Name or email..."
+                                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm focus:border-primary focus:ring-1 focus:ring-primary"
                                 />
                             </div>
-                            <div className="flex-1">
-                                <label
-                                    htmlFor="role-filter"
-                                    className="mb-1 block text-sm font-medium text-gray-700"
-                                >
+                            <div>
+                                <label className="block text-sm font-medium mb-1.5">
                                     Filter by Role
                                 </label>
                                 <select
-                                    id="role-filter"
                                     value={roleFilter}
-                                    onChange={(e) =>
-                                        setRoleFilter(e.target.value)
-                                    }
-                                    className="w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                    onChange={(e) => setRoleFilter(e.target.value)}
+                                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm focus:border-primary focus:ring-1 focus:ring-primary"
                                 >
                                     <option value="">All Roles</option>
-                                    {Object.entries(roles).map(
-                                        ([key, value]) => (
-                                            <option key={key} value={key}>
-                                                {value}
-                                            </option>
-                                        ),
-                                    )}
+                                    {Object.entries(roles).map(([name, display]) => (
+                                        <option key={name} value={name}>
+                                            {display}
+                                        </option>
+                                    ))}
                                 </select>
                             </div>
                         </div>
+
                         {(search || roleFilter) && (
-                            <div className="mt-4 flex items-center space-x-2">
-                                <span className="text-sm text-gray-600">
-                                    Active filters:
-                                    {search && (
-                                        <span className="ml-1 font-medium">
-                                            Search: "{search}"
-                                        </span>
-                                    )}
-                                    {roleFilter && (
-                                        <span className="ml-1 font-medium">
-                                            Role: {roles[roleFilter]}
-                                        </span>
-                                    )}
-                                </span>
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => {
-                                        setSearch('');
-                                        setRoleFilter('');
-                                    }}
-                                >
-                                    Clear Filters
+                            <div className="mt-4 flex items-center gap-3 text-sm text-muted-foreground">
+                                <span>Active filters:</span>
+                                {search && <span className="font-medium">"{search}"</span>}
+                                {roleFilter && <span className="font-medium">{roles[roleFilter]}</span>}
+                                <Button variant="ghost" size="sm" onClick={clearFilters}>
+                                    Clear
                                 </Button>
                             </div>
                         )}
                     </CardContent>
                 </Card>
 
-                {/* Role assignment form - Phase 2
+                {/* Global Assign Form */}
                 <Card className="max-w-md">
                     <CardHeader>
                         <CardTitle>Assign Role to User</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <p className="text-sm text-muted-foreground">
-                            Role assignment form will be implemented in Phase 2.
-                        </p>
+                        <form onSubmit={handleGlobalAssign} className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium mb-1.5">User</label>
+                                <Select
+                                    value={assignForm.data.selectedUser}
+                                    onValueChange={(v) => assignForm.setData('selectedUser', v)}
+                                >
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select user..." />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {users.data.map((user) => (
+                                            <SelectItem key={user.id} value={user.id.toString()}>
+                                                {user.full_name ||
+                                                    `${user.first_name || ''} ${user.last_name || ''}`.trim() ||
+                                                    user.email}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                                {assignForm.errors.selectedUser && (
+                                    <p className="text-sm text-destructive mt-1">
+                                        {assignForm.errors.selectedUser}
+                                    </p>
+                                )}
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium mb-1.5">Role</label>
+                                <Select
+                                    value={assignForm.data.selectedRole}
+                                    onValueChange={(v) => assignForm.setData('selectedRole', v)}
+                                >
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select role..." />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {Object.entries(roles).map(([name, display]) => (
+                                            <SelectItem key={name} value={name}>
+                                                {display}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                                {assignForm.errors.selectedRole && (
+                                    <p className="text-sm text-destructive mt-1">
+                                        {assignForm.errors.selectedRole}
+                                    </p>
+                                )}
+                            </div>
+
+                            <Button type="submit" disabled={assignForm.processing} className="w-full">
+                                {assignForm.processing ? 'Assigning...' : 'Assign Role'}
+                            </Button>
+                        </form>
                     </CardContent>
                 </Card>
-                */}
 
-                {/* Current Role Assignments Table */}
+                {/* Users & Roles Table */}
                 <Card>
                     <CardHeader>
-                        <CardTitle>Current Role Assignments</CardTitle>
+                        <CardTitle>Users & Current Roles</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <Table role="table" aria-label="User role assignments">
+                        <Table
+                            role="table"
+                            aria-label="User role assignments table"
+                        >
                             <TableHeader>
                                 <TableRow role="row">
-                                    <TableHead
-                                        role="columnheader"
-                                        aria-sort="none"
-                                    >
+                                    <TableHead role="columnheader" aria-sort="none" className="w-[240px]">
                                         User
                                     </TableHead>
-                                    <TableHead
-                                        role="columnheader"
-                                        aria-sort="none"
-                                    >
-                                        Email
+                                    <TableHead role="columnheader" aria-sort="none">
+                                        Roles
                                     </TableHead>
-                                    <TableHead
-                                        role="columnheader"
-                                        aria-sort="none"
-                                    >
-                                        Current Roles
+                                    <TableHead role="columnheader" aria-sort="none" className="w-[300px]">
+                                        Add / Manage
                                     </TableHead>
-                                    <TableHead role="columnheader">
+                                    <TableHead role="columnheader" className="w-[140px] text-right">
                                         Actions
                                     </TableHead>
                                 </TableRow>
@@ -373,36 +410,74 @@ export default function RoleAssignment({
                                 {users.data.map((user) => (
                                     <TableRow key={user.id} role="row">
                                         <TableCell role="cell">
-                                            {user.first_name && user.last_name
-                                                ? `${user.first_name} ${user.last_name}`
-                                                : user.email}
+                                            <div className="font-medium">
+                                                {user.full_name ||
+                                                    `${user.first_name || ''} ${user.last_name || ''}`.trim() ||
+                                                    user.email}
+                                            </div>
+                                            <div className="text-xs text-muted-foreground mt-0.5">
+                                                {user.email}
+                                            </div>
                                         </TableCell>
+
                                         <TableCell role="cell">
-                                            {user.email}
+                                            <div className="flex flex-wrap gap-1.5">
+                                                {user.roles.length > 0 ? (
+                                                    user.roles.map((role) => (
+                                                        <Badge
+                                                            key={role.name}
+                                                            variant="secondary"
+                                                            className="flex items-center gap-1 px-2.5 py-0.5"
+                                                        >
+                                                            {role.display_name}
+                                                            <button
+                                                                onClick={() => handleRemove(user.id, role.name)}
+                                                                className="ml-1 rounded hover:bg-destructive/70 hover:text-white p-0.5 -mr-1 transition-colors"
+                                                                disabled={processingId === user.id}
+                                                            >
+                                                                <X className="h-3.5 w-3.5" />
+                                                            </button>
+                                                        </Badge>
+                                                    ))
+                                                ) : (
+                                                    <span className="text-sm text-muted-foreground italic">
+                                                        No roles assigned
+                                                    </span>
+                                                )}
+                                            </div>
                                         </TableCell>
+
                                         <TableCell role="cell">
-                                            {user.roles.length > 0
-                                                ? user.roles
-                                                      .map(
-                                                          (role) =>
-                                                              role.display_name,
-                                                      )
-                                                      .join(', ')
-                                                : 'No roles assigned'}
+                                            <div className="flex items-center gap-2">
+                                                <select
+                                                    className="h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus:border-primary focus:ring-1 focus:ring-primary disabled:opacity-50"
+                                                    onChange={(e) => handleInlineAssign(user.id, e.target.value)}
+                                                    value=""
+                                                    disabled={processingId === user.id}
+                                                >
+                                                    <option value="" disabled>
+                                                        + Add role...
+                                                    </option>
+                                                    {Object.entries(roles).map(([name, display]) => (
+                                                        <option key={name} value={name}>
+                                                            {display}
+                                                        </option>
+                                                    ))}
+                                                </select>
+
+                                                {processingId === user.id && (
+                                                    <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                                                )}
+                                            </div>
                                         </TableCell>
-                                        <TableCell>
+
+                                        <TableCell role="cell" className="text-right">
                                             <Button
-                                                variant="outline"
+                                                variant="ghost"
                                                 size="sm"
                                                 onClick={() => {
-                                                    if (
-                                                        confirm(
-                                                            `Impersonate ${user.first_name || user.email}?`,
-                                                        )
-                                                    ) {
-                                                        router.post(
-                                                            `/impersonate/take/${user.id}`,
-                                                        );
+                                                    if (confirm(`Impersonate ${user.full_name || user.email}?`)) {
+                                                        router.post(`/impersonate/take/${user.id}`);
                                                     }
                                                 }}
                                             >
@@ -415,83 +490,54 @@ export default function RoleAssignment({
                         </Table>
 
                         {/* Pagination */}
-                        {users.last_page > 1 && (
-                            <div className="flex items-center justify-between pt-4">
-                                <div className="text-sm text-muted-foreground">
-                                    Showing{' '}
-                                    {(users.current_page - 1) * users.per_page +
-                                        1}{' '}
-                                    to{' '}
-                                    {Math.min(
-                                        users.current_page * users.per_page,
-                                        users.total,
-                                    )}{' '}
-                                    of {users.total} users
-                                </div>
-                                <div className="flex items-center space-x-2">
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        disabled={users.current_page === 1}
-                                        asChild={users.current_page > 1}
-                                    >
-                                        {users.current_page > 1 ? (
-                                            <Link
-                                                href={
-                                                    users.links[
-                                                        users.current_page - 2
-                                                    ]?.url || '#'
-                                                }
-                                            >
-                                                <ChevronLeft className="h-4 w-4" />
-                                                Previous
-                                            </Link>
-                                        ) : (
-                                            <>
-                                                <ChevronLeft className="h-4 w-4" />
-                                                Previous
-                                            </>
-                                        )}
-                                    </Button>
-
-                                    <span className="text-sm">
-                                        Page {users.current_page} of{' '}
-                                        {users.last_page}
-                                    </span>
-
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        disabled={
-                                            users.current_page ===
-                                            users.last_page
-                                        }
-                                        asChild={
-                                            users.current_page < users.last_page
-                                        }
-                                    >
-                                        {users.current_page <
-                                        users.last_page ? (
-                                            <Link
-                                                href={
-                                                    users.links[
-                                                        users.current_page
-                                                    ]?.url || '#'
-                                                }
-                                            >
-                                                Next
-                                                <ChevronRight className="h-4 w-4" />
-                                            </Link>
-                                        ) : (
-                                            <>
-                                                Next
-                                                <ChevronRight className="h-4 w-4" />
-                                            </>
-                                        )}
-                                    </Button>
-                                </div>
+                        <div className="mt-6 flex items-center justify-between border-t pt-4 text-sm text-muted-foreground">
+                            <div>
+                                Showing {from}–{to} of {users.total} users
                             </div>
-                        )}
+                            <div className="flex items-center gap-2">
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    disabled={!users.prev_page_url}
+                                    asChild={!!users.prev_page_url}
+                                >
+                                    {users.prev_page_url ? (
+                                        <Link href={users.prev_page_url}>
+                                            <ChevronLeft className="mr-1 h-4 w-4" />
+                                            Previous
+                                        </Link>
+                                    ) : (
+                                        <>
+                                            <ChevronLeft className="mr-1 h-4 w-4" />
+                                            Previous
+                                        </>
+                                    )}
+                                </Button>
+
+                                <span className="px-3">
+                                    Page {users.current_page} / {users.last_page}
+                                </span>
+
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    disabled={!users.next_page_url}
+                                    asChild={!!users.next_page_url}
+                                >
+                                    {users.next_page_url ? (
+                                        <Link href={users.next_page_url}>
+                                            Next
+                                            <ChevronRight className="ml-1 h-4 w-4" />
+                                        </Link>
+                                    ) : (
+                                        <>
+                                            Next
+                                            <ChevronRight className="ml-1 h-4 w-4" />
+                                        </>
+                                    )}
+                                </Button>
+                            </div>
+                        </div>
                     </CardContent>
                 </Card>
             </div>
