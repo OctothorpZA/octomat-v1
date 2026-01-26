@@ -29,10 +29,20 @@ export interface ImpersonationData {
     originalUser: User | null;
 }
 
+interface NavigationItem {
+    title: string;
+    href: string;
+    icon?: string;
+    permission?: string | null;
+    priority: number;
+    children?: NavigationItem[];
+}
+
 export interface SharedData extends InertiaSharedProps {
     name: string;
     auth: Auth;
     impersonate: ImpersonationData;
+    navigation: NavigationItem[];
     sidebarOpen: boolean;
     [key: string]: unknown;
 }

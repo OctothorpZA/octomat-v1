@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Admin;
 use App\Events\RoleAssigned;
 use App\Events\RoleRemoved;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\RoleAssignRequest;
+use App\Http\Requests\Admin\RoleRemoveRequest;
 use App\Models\User;
 use App\Services\AuditService;
 use Illuminate\Http\RedirectResponse;
@@ -57,7 +59,7 @@ class RoleAssignmentController extends Controller
     /**
      * Assign a new role to a user with hierarchy and conflict checks.
      */
-    public function assign(Request $request): RedirectResponse
+    public function assign(RoleAssignRequest $request): RedirectResponse
     {
         $validated = $request->validate([
             'selectedUser' => 'required|exists:users,id',
@@ -79,7 +81,8 @@ class RoleAssignmentController extends Controller
         }
 
         // 3. Validation: Prevent conflicting roles (similar hierarchy levels)
-        $conflicting = $user->roles->filter(fn ($r) => abs($r->level - $role->level) < 100 && $r->name !== $role->name
+        // $conflicting = $user->roles->filter(fn ($r) => abs($r->level - $role->level) < 100 && $r->name !== $role->name // Original - future combo whitelist or restrictions to be thoughtout and adjusted
+        $conflicting = $user->roles->filter(fn ($r) => abs($r->level - $role->level) < 50 && $r->name !== $role->name
         );
 
         if ($conflicting->isNotEmpty()) {
@@ -113,7 +116,7 @@ class RoleAssignmentController extends Controller
     /**
      * Remove a role from a user.
      */
-    public function remove(Request $request): RedirectResponse
+    public function remove(RoleRemoveRequest $request): RedirectResponse
     {
         $validated = $request->validate([
             'selectedUser' => 'required|exists:users,id',
