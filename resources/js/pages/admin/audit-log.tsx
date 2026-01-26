@@ -64,7 +64,7 @@ export default function AuditLog({
     const [connectionStatus, setConnectionStatus] = useState<
         'connecting' | 'connected' | 'disconnected' | 'error'
     >('disconnected');
-    const { auth } = usePage().props as { auth?: { user?: { id: number } } } };
+    const { auth } = usePage().props as { auth?: { user?: { id: number } } };
 
     // Real-time audit log updates
     useEffect(() => {

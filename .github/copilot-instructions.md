@@ -1,305 +1,138 @@
-# CLAUDE.md
+# Agent Guidelines for Octomat
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This document provides guidelines for AI agents working on the Octomat Laravel application. It includes build commands, testing procedures, and code style guidelines to ensure consistent development practices.
 
-## Project Overview
+## 📚 **Comprehensive RAG Documentation**
 
-Octomat is a Laravel 12 application with React 19 + Inertia.js 2 SPA experience, featuring enterprise-grade RBAC with an 11-tier hierarchical role system (levels 100-1000) and a unified dashboard that aggregates role-based widgets.
+**IMPORTANT**: Before starting any development work, please reference the complete RAG (Retrieval-Augmented Generation) documentation located in `docs/RAG/`:
 
-## Essential Commands
+- **[📖 Full Documentation](docs/RAG/)** - Comprehensive codebase knowledge base
+- **[00-README.md](docs/RAG/00-README.md)** - Start here for overview and reading guide
+- **[01-overview.md](docs/RAG/01-overview.md)** - Application architecture and tech stack
+- **[02-architecture-patterns.md](docs/RAG/02-architecture-patterns.md)** - Design patterns and architectural decisions
+- **[03-database-schema.md](docs/RAG/03-database-schema.md)** - Database structure and models
+- **[04-api-routes.md](docs/RAG/04-api-routes.md)** - API endpoints and controllers
+- **[05-frontend-components.md](docs/RAG/05-frontend-components.md)** - React components and UI patterns
+- **[06-development-workflow.md](docs/RAG/06-development-workflow.md)** - Development commands and workflow
+- **[07-testing.md](docs/RAG/07-testing.md)** - Testing patterns and best practices
+- **[08-configuration.md](docs/RAG/08-configuration.md)** - Configuration and environment setup
 
-### Development
-```bash
-composer run dev           # Full stack dev server (artisan serve + queue + logs + vite)
-composer run dev:ssr       # SSR development mode
-composer run setup         # First-time project setup
-php artisan serve          # Backend only
-npm run dev                # Frontend only (Vite)
-```
+The numbered prefixes indicate the recommended reading sequence (00-08). Read through these documents in order for the most efficient onboarding and development experience.
 
-### Testing
-```bash
-composer run test                                      # Run all tests with linting
-php artisan test --compact                            # Run all tests
-php artisan test --compact tests/Feature/ExampleTest.php  # Run specific file
-php artisan test --compact --filter=testName         # Run specific test
-```
+## Build Commands
 
-### Code Quality
-```bash
-vendor/bin/pint --dirty    # Format PHP (must run before committing)
-npm run lint               # Lint and fix JS/TS
-npm run format             # Format JS/TS
-npm run types              # TypeScript type checking
-```
+### Frontend (JavaScript/TypeScript/React)
 
-### Building
-```bash
-npm run build              # Production build
-npm run build:ssr          # SSR build
-```
-
-## Architecture Overview
-
-### RBAC System (Critical)
-
-The application uses an 11-tier hierarchical role system with levels 100-1000:
-- Super Admin (1000) → Admin (900) → ... → End User (100)
-- Roles are managed by Spatie Laravel Permission package
-- Privilege escalation prevention: users cannot assign roles >= their highest role level
-- Custom gate: `assign-roles` for role assignment access
-- Middleware: `role:Super Admin` for super admin only routes
-
-**Key files:**
-- `database/seeders/RoleSeeder.php` - Role hierarchy definitions
-- `app/Providers/AuthServiceProvider.php` - Authorization gates
-- `app/Http/Middleware/ImpersonateProtection.php` - Impersonation security
-- `app/Http/Controllers/Admin/RoleAssignmentController.php` - Role assignment logic
-
-### Unified Dashboard Pattern
-
-Single dashboard for all user types with role-aggregated widgets:
-- Widgets are dynamically loaded based on ALL user roles (not just highest)
-- Each role contributes its widgets to the dashboard
-- Widgets are sorted by priority and limited to 9 per dashboard
-- Located in `DashboardController::index()` and `DashboardController::getWidgetsForRole()`
-
-**Implementation pattern:**
-```php
-// Aggregate widgets from ALL user roles
-$userRoles = $user->roles->pluck('name')->toArray();
-$widgets = [];
-foreach ($userRoles as $role) {
-    $widgets = array_merge($widgets, $this->getWidgetsForRole($role, $user));
-}
-```
-
-### Key Architectural Patterns
-
-1. **Form Request Validation** - All validation in dedicated Request classes under `app/Http/Requests/`
-2. **Middleware Stack** - Custom middleware in `bootstrap/app.php` (Laravel 12 style):
-   - `HandleAppearance` - Dark/light mode persistence
-   - `HandleInertiaRequests` - Inertia shared data
-   - `ImpersonateProtection` - Impersonation security
-   - `RoleBasedRedirect` - Role-based redirects
-3. **Route Organization** - Routes split into:
-   - `routes/web.php` - Main routes (dashboard, admin, impersonation)
-   - `routes/settings.php` - Settings routes (profile, password, security, appearance)
-4. **Controller Organization**:
-   - `app/Http/Controllers/` - Main controllers
-   - `app/Http/Controllers/Admin/` - Admin controllers
-   - `app/Http/Controllers/Settings/` - Settings controllers
-
-## Directory Structure
+- **Build for production**: `npm run build`
+- **Build with SSR**: `npm run build:ssr`
+- **Development server**: `npm run dev`
+- **Format code**: `npm run format`
+- **Check formatting**: `npm run format:check`
+- **Lint code**: `npm run lint`
+- **Type checking**: `npm run types`
 
 ### Backend (PHP/Laravel)
-```
-app/
-├── Http/
-│   ├── Controllers/       # Main controllers
-│   │   ├── Admin/        # Admin-specific controllers
-│   │   └── Settings/     # Settings controllers
-│   ├── Middleware/       # Custom middleware
-│   └── Requests/         # Form Request validation classes
-│       └── Settings/     # Settings-specific requests
-├── Models/               # Eloquent models (User.php)
-└── Providers/            # Service providers (gates, policies)
 
-database/
-├── migrations/           # Database migrations
-├── seeders/             # Database seeders (RoleSeeder critical for RBAC)
-└── factories/           # Model factories
-```
+- **Development server**: `php artisan serve`
+- **Full development environment**: `composer run dev` (runs server, queue, logs, and Vite concurrently)
+- **SSR development**: `composer run dev:ssr`
+- **Setup project**: `composer run setup`
 
-### Frontend (React/TypeScript)
-```
-resources/js/
-├── actions/             # Wayfinder-generated type-safe route functions
-│   ├── App/            # App controller actions
-│   ├── Laravel/        # Laravel controller actions
-│   └── Lab404/         # Lab404 Impersonate controller actions
-├── components/         # Reusable React components
-│   ├── ui/            # shadcn/ui components
-│   └── admin/         # Admin-specific components
-├── layouts/           # Layout components
-│   ├── app/          # Main app layouts (AppLayout, Sidebar, etc.)
-│   ├── auth/         # Auth layouts
-│   └── settings/     # Settings layouts
-├── pages/            # Inertia page components
-│   ├── admin/       # Admin pages (role assignment, audit log)
-│   ├── settings/    # Settings pages
-│   └── auth/        # Auth pages
-├── hooks/           # Custom React hooks
-├── lib/             # Utilities (cn, utils)
-└── types/           # TypeScript type definitions
-```
+## Testing Commands
 
-## Critical Application-Specific Patterns
+### Running Tests
 
-### 1. User Structure
-Users have structured name fields (NOT a single 'name' field):
-- `first_name` (required)
-- `middle_names` (optional)
-- `last_name` (required)
-- `date_of_birth` (required)
-- `email` (required, unique)
+- **Run all tests**: `composer run test` or `php artisan test --compact`
+- **Run tests in specific file**: `php artisan test --compact tests/Feature/ExampleTest.php`
+- **Run specific test**: `php artisan test --compact --filter=testName`
+- **Run unit tests only**: `php artisan test tests/Unit`
+- **Run feature tests only**: `php artisan test tests/Feature`
 
-**Display name pattern:** `{first_name} {last_name}` (exclude middle_names from display)
+### Code Quality
 
-### 2. Wayfinder Usage
-Type-safe route generation with automatic TypeScript types:
-```typescript
-import { assign } from '@/actions/App/Http/Controllers/Admin/RoleAssignmentController'
-assign.post({ user_id: 1, role: 'Admin' })
+- **Lint PHP code**: `composer run lint` (runs Pint)
+- **Test linting**: `composer run test:lint`
+- **Check code formatting**: `npm run format:check`
 
-// For forms with Inertia
-<Form {...assign.form()}>
-```
-
-Run `php artisan wayfinder:generate` after route changes (or Vite plugin auto-generates).
-
-### 3. Spatie Permission Integration
-```php
-// Check role
-$user->hasRole('Super Admin');
-
-// Check permission via gate
-Gate::allows('assign-roles');
-
-// Assign role with hierarchy validation
-if ($authUser->getHighestRoleLevel() > $targetRole->level) {
-    $user->assignRole($targetRole);
-}
-```
-
-### 4. Impersonation System
-```php
-// Start impersonation (Super Admin only)
-Route::post('/impersonate/take/{id}/{guardName?}')
-    ->middleware(['role:Super Admin']);
-
-// Stop impersonation (any authenticated user)
-Route::post('/impersonate/leave');
-```
-
-Uses lab404/laravel-impersonate with custom `ImpersonateProtection` middleware.
-
-### 5. Appearance/Theme System
-- Theme stored in `appearance` cookie (not encrypted - see `bootstrap/app.php`)
-- Values: `light`, `dark`, or `system`
-- Handled by `HandleAppearance` middleware
-- Synced to frontend via Inertia shared props
-
-## Important Integrations
-
-### Laravel Boost MCP Server
-MCP server with specialized tools for this application:
-- `tinker` - Execute PHP for debugging/testing
-- `database-query` - Read-only SQL queries
-- `browser-logs` - Read browser console logs
-- `search-docs` - Version-specific Laravel ecosystem documentation
-- `list-artisan-commands` - List available Artisan commands
-- `get-absolute-url` - Get absolute URLs for routes
-
-**Always use `search-docs` before implementing Laravel/Inertia/Pest/Tailwind features.**
-
-### Testing with Pest 4
-- Browser testing available in `tests/Browser/`
-- Feature tests in `tests/Feature/`
-- Unit tests in `tests/Unit/`
-- Use factories for test data: `User::factory()->create()`
-- Use `RefreshDatabase` trait in browser tests when needed
-
-### React Compiler
-Enabled in `vite.config.ts` with `babel-plugin-react-compiler` for automatic optimization.
-
-## RAG Documentation
-
-**CRITICAL:** Comprehensive documentation in `docs/RAG/` directory:
-- Read in order: `00-README.md` → `08-configuration.md`
-- Contains detailed architecture, database schema, API routes, components, testing patterns
-- Reference before making architectural decisions
-
-## Key Conventions
+## Code Style Guidelines
 
 ### PHP
-- Use PHP 8 constructor property promotion
-- Always explicit return types and parameter types
-- Form Request classes for ALL validation (never inline validation)
-- Eloquent relationships with proper return type hints
-- Check sibling files for naming/structure conventions
 
-### TypeScript/React
-- Named imports for tree-shaking (not default imports)
-- 4-space indentation
-- Import organization: builtin → external → internal → parent → sibling
-- Use Wayfinder for type-safe routing
-- Check `resources/js/components/` for existing components before creating new ones
+- **Type Declarations**: Always use explicit return type declarations for methods and functions
+- **Constructor Promotion**: Use PHP 8 constructor property promotion in `__construct()`
+- **Control Structures**: Always use curly braces for control structures, even for single lines
+- **Comments**: Prefer PHPDoc blocks over inline comments. Avoid comments within code unless complex logic exists
+- **Array Types**: Add useful array shape type definitions for arrays when appropriate
+- **Enums**: Use TitleCase for enum keys (e.g., `FavoritePerson`, `BestLake`, `Monthly`)
+- **Imports**: Organize imports properly (use statements at top)
 
-### Testing
-- Every change requires a test (feature or unit)
-- Use `--filter` to run minimal tests during development
-- Descriptive test names with Pest syntax: `test('user can update profile', ...)`
-- Use specific assertions: `assertForbidden()` not `assertStatus(403)`
+### JavaScript/TypeScript/React
 
-### Git Workflow
-- Feature branches from `main`
-- Conventional commit messages
-- Run `vendor/bin/pint --dirty` before committing
-- Current branch: `itws-I`, Main branch: `main`
+- **Import Order**: Imports organized by groups: builtin → external → internal → parent → sibling → index
+- **Alphabetical Sorting**: Imports within groups are sorted alphabetically, case-insensitive
+- **Semicolons**: Required
+- **Single Quotes**: Preferred over double quotes
+- **Tab Width**: 4 spaces
+- **Print Width**: 80 characters
+- **Single Attribute Per Line**: Disabled (multiple attributes per line allowed)
+- **Tailwind Functions**: `clsx`, `cn` recognized for sorting
+- **React**: No need to import React (React 17+ JSX transform)
+- **Prop Types**: Disabled (using TypeScript instead)
 
-## Common Pitfalls
+### Testing (Pest)
 
-1. **Don't bypass RBAC hierarchy validation** - Always check role levels before assignment
-2. **Don't use `env()` outside config files** - Use `config('key')` instead
-3. **Don't create new base folders** - Stick to existing directory structure
-4. **Don't skip Form Request classes** - Never inline validation in controllers
-5. **Don't forget eager loading** - Prevent N+1 queries with `->with()`
-6. **Don't modify user structure** - Maintain first_name/middle_names/last_name pattern
-7. **Run Pint before committing** - `vendor/bin/pint --dirty` is mandatory
+- **Test Structure**: All tests must use Pest syntax
+- **Test Coverage**: Every change must be programmatically tested
+- **Test Types**: Write both unit tests (`tests/Unit/`) and feature tests (`tests/Feature/`)
+- **Test Naming**: Use descriptive test names with `test()` function
+- **Assertions**: Use specific assertion methods like `assertForbidden`, `assertNotFound` instead of generic `assertStatus()`
+- **Factories**: Use model factories for test data creation
+- **Mocking**: Use `Pest\Laravel\mock` for mocking, import with `use function Pest\Laravel\mock;`
+- **Datasets**: Use datasets for tests with multiple similar data variations
 
-## Special Routes
+### Laravel-Specific Guidelines
 
-### Admin Routes (prefix: `/admin`)
-- `/admin/dashboard` - Admin dashboard (unified with role-based widgets)
-- `/admin/roles/assign` - Role assignment interface (requires `assign-roles` gate)
-- `/admin/audit` - Audit log (Super Admin only)
+- **Controllers**: Always create Form Request classes for validation instead of inline validation
+- **Models**: Use Eloquent relationships and avoid raw DB queries when possible
+- **Routes**: Prefer named routes with `route()` helper
+- **Configuration**: Never use `env()` directly outside config files; use `config()` instead
+- **Database**: Use eager loading to prevent N+1 query problems
+- **Authentication**: Use Laravel's built-in auth features (Fortify, Sanctum, etc.)
+- **Queues**: Use `ShouldQueue` interface for time-consuming operations
 
-### Settings Routes (prefix: `/settings`)
-All settings routes in `routes/settings.php`:
-- `/settings/profile` - Profile management
-- `/settings/password` - Password updates (throttled: 6/minute)
-- `/settings/security` - 2FA management
-- `/settings/appearance` - Theme settings
+### Frontend Guidelines
 
-### Authentication Routes
-Handled by Laravel Fortify with custom views:
-- Features enabled: registration, email verification, 2FA, password reset
-- Custom views registered in `FortifyServiceProvider`
+- **Navigation**: Use `router.visit()` or `<Link>` for Inertia navigation
+- **Forms**: Use Inertia `<Form>` component with proper error handling
+- **Styling**: Use Tailwind CSS classes with proper responsive design
+- **Components**: Check for existing reusable components before creating new ones
+- **State Management**: Use React hooks appropriately
 
-## Database
+## File Structure
 
-- PostgreSQL (default connection)
-- Migrations in `database/migrations/`
-- Key tables:
-  - `users` - User accounts with structured names
-  - `roles` - Spatie roles with `level` column (100-1000)
-  - `permissions` - Spatie permissions
-  - `model_has_roles` - User-role pivot
-  - `audit_logs` - Role assignment audit trail
-- Always include ALL column attributes when modifying columns in migrations
+- **PHP Controllers**: `app/Http/Controllers/`
+- **Models**: `app/Models/`
+- **React Components**: `resources/js/components/`
+- **React Pages**: `resources/js/pages/`
+- **Tests**: `tests/Feature/` and `tests/Unit/`
+- **Styles**: `resources/css/`
+- **Configuration**: `config/`
 
-## Environment & Configuration
+## Pre-commit Hooks
 
-- PHP 8.5.2 required
-- Node LTS required
-- `.env` file for environment variables (use `config()` to access in code)
-- Key configs:
-  - `config/fortify.php` - Authentication features
-  - `config/permission.php` - Spatie permission configuration
-  - `bootstrap/app.php` - Middleware and exception configuration
+- **PHP Formatting**: `vendor/bin/pint --dirty` (run before committing)
+- **Code Quality**: Run affected tests before committing changes
+
+## Environment Setup
+
+- **PHP Version**: 8.5.2
+- **Node Version**: Latest LTS
+- **Database**: Configured in `.env` file
+- **Queue**: Use `sync` for development, configure properly for production
 
 ---
+
+# Laravel Boost Guidelines
 
 <laravel-boost-guidelines>
 === foundation rules ===
@@ -313,6 +146,7 @@ This application is a Laravel application and its main Laravel ecosystems packag
 
 - php - 8.5.2
 - inertiajs/inertia-laravel (INERTIA) - v2
+- lab404/laravel-impersonate (IMPERSONATE) - v1
 - laravel/fortify (FORTIFY) - v1
 - laravel/framework (LARAVEL) - v12
 - laravel/prompts (PROMPTS) - v0
@@ -322,7 +156,9 @@ This application is a Laravel application and its main Laravel ecosystems packag
 - laravel/sail (SAIL) - v1
 - pestphp/pest (PEST) - v4
 - phpunit/phpunit (PHPUNIT) - v12
+- spatie/laravel-permission (PERMISSION) - v6
 - @inertiajs/react (INERTIA) - v2
+- laravel-echo (ECHO) - v2
 - react (REACT) - v19
 - tailwindcss (TAILWINDCSS) - v4
 - @laravel/vite-plugin-wayfinder (WAYFINDER) - v0

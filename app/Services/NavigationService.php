@@ -70,25 +70,29 @@ class NavigationService
                         'title' => 'Dashboard',
                         'href' => '/admin/dashboard',
                         'icon' => 'BarChart3',
-                        'permission' => 'viewAdminDashboard',
+                        // grok old code  'permission' => 'viewAdminDashboard',
+                        'permission' => 'system.admin', // claude change
                     ],
                     [
                         'title' => 'User Management',
                         'href' => '/admin/roles/assign',
                         'icon' => 'Users',
-                        'permission' => 'manageRoles',
+                        // grok old code  'permission' => 'manageRoles',
+                        'permission' => 'assign-roles', // claude change
                     ],
                     [
                         'title' => 'Audit Logs',
                         'href' => '/admin/audit',
                         'icon' => 'FileText',
-                        'permission' => 'viewAuditLog',
+                        // grok old code  'permission' => 'viewAuditLog',
+                        'permission' => 'system.audit', // claude change
                     ],
                     [
                         'title' => 'System Settings',
                         'href' => '#',
                         'icon' => 'Settings',
-                        'permission' => 'manageSystem',
+                        // grok old code 'permission' => 'manageSystem',
+                        'permission' => 'system.admin', // claude change
                     ],
                 ],
             ],

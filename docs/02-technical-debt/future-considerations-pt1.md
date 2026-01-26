@@ -66,6 +66,7 @@ resources/js/types/
 ├── auth.ts              # User, Auth, ImpersonationData
 ├── navigation.ts        # NavItem, NavGroup, BreadcrumbItem
 ├── shared.ts            # SharedData, InertiaSharedProps extensions
+├── broadcast.ts         # Echo events, channels, auth types (admin notifications)
 └── components.ts        # Component-specific types (future)
 ```
 

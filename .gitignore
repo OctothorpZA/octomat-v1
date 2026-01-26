@@ -25,6 +25,7 @@ yarn-error.log
 /.archive
 
 # Ignore IDE specific directories
+/.claude
 /.gemini
 /.vscode
 
