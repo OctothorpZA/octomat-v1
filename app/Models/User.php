@@ -156,18 +156,23 @@ class User extends Authenticatable
 
     /**
      * Custom helper methods for role management
+     *
+     * TEMPORARILY DISABLED - Level system removed for simplification.
+     * These methods will be re-enabled when hierarchy features are needed.
+     *
+     * @todo Re-enable when implementing role hierarchy (Sprint X)
      */
-    public function getHighestRoleLevel(): int
-    {
-        return $this->roles()->max('level') ?? 300;
-    }
+    // public function getHighestRoleLevel(): int
+    // {
+    //     return $this->roles()->max('level') ?? 300;
+    // }
 
-    public function getPrimaryRole(): ?Role
-    {
-        return $this->roles()
-            ->orderByDesc('level')
-            ->first();
-    }
+    // public function getPrimaryRole(): ?Role
+    // {
+    //     return $this->roles()
+    //         ->orderByDesc('level')
+    //         ->first();
+    // }
 
     /**
      * Auto-assign default role

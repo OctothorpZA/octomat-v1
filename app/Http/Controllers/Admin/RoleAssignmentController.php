@@ -57,41 +57,46 @@ class RoleAssignmentController extends Controller
     }
 
     /**
-     * Assign a new role to a user with hierarchy and conflict checks.
+     * Assign a new role to a user.
+     *
+     * SIMPLIFIED - Hierarchy and conflict checks temporarily disabled.
+     * Will re-enable when role hierarchy features are needed.
+     *
+     * @todo Re-enable hierarchy checks (lines marked with HIERARCHY-DISABLED)
      */
     public function assign(RoleAssignRequest $request): RedirectResponse
     {
-        $validated = $request->validate([
-            'selectedUser' => 'required|exists:users,id',
-            'selectedRole' => 'required|string|exists:roles,name',
-        ]);
+        $validated = $request->validated();
 
         $user = User::findOrFail($validated['selectedUser']);
         $role = Role::where('name', $validated['selectedRole'])->firstOrFail();
         $currentUser = $request->user();
 
-        // 1. Authorization: Prevent self-assignment of high-level roles
-        if ($currentUser->id === $user->id && $role->level >= 900) {
-            return back()->withErrors(['authorization' => 'Security: Cannot assign high-level administrative roles to yourself.']);
+        // Security: Prevent self-assignment of administrative roles
+        // This check is kept even without level system for security
+        if ($currentUser->id === $user->id && $role->name !== 'General User') {
+            return back()->withErrors(['authorization' => 'Security: Cannot assign administrative roles to yourself.']);
         }
 
-        // 2. Authorization: Hierarchy check (cannot assign roles above own level)
-        if ($currentUser->getHighestRoleLevel() <= $role->level && ! $currentUser->hasRole('Super Admin')) {
-            return back()->withErrors(['authorization' => 'Access Denied: Cannot assign roles at or above your own authority level.']);
-        }
+        // HIERARCHY-DISABLED: Level-based authorization checks
+        // if ($currentUser->getHighestRoleLevel() <= $role->level && ! $currentUser->hasRole('Super Admin')) {
+        //     return back()->withErrors(['authorization' => 'Access Denied: Cannot assign roles at or above your own authority level.']);
+        // }
 
-        // 3. Validation: Prevent conflicting roles (similar hierarchy levels)
-        // $conflicting = $user->roles->filter(fn ($r) => abs($r->level - $role->level) < 100 && $r->name !== $role->name // Original - future combo whitelist or restrictions to be thoughtout and adjusted
-        $conflicting = $user->roles->filter(fn ($r) => abs($r->level - $role->level) < 50 && $r->name !== $role->name
-        );
+        // HIERARCHY-DISABLED: Role conflict detection based on levels
+        // $conflicting = $user->roles->filter(function ($r) use ($role) {
+        //     if (abs($r->level - $role->level) >= 50) {
+        //         return false;
+        //     }
+        //     if ($r->name === $role->name) {
+        //         return false;
+        //     }
+        //     ... whitelist logic ...
+        //     return true;
+        // });
+        // if ($conflicting->isNotEmpty()) { ... }
 
-        if ($conflicting->isNotEmpty()) {
-            $names = $conflicting->pluck('display_name')->join(', ');
-
-            return back()->withErrors(['conflict' => "Conflict: User already has roles within this tier: {$names}"]);
-        }
-
-        // 4. Validation: Prevent duplicate assignment
+        // Validation: Prevent duplicate assignment
         if ($user->hasRole($role->name)) {
             return back()->withErrors(['role' => 'This user already holds the selected role.']);
         }
@@ -159,10 +164,15 @@ class RoleAssignmentController extends Controller
 
     /**
      * Dynamically fetch roles from the database.
+     *
+     * SIMPLIFIED - Using alphabetical ordering instead of level-based.
+     * Will re-enable level ordering when hierarchy is needed.
+     *
+     * @todo Re-enable: ->orderBy('level', 'desc')
      */
     private function getAvailableRoles(): array
     {
-        return Role::orderBy('level', 'desc')
+        return Role::orderBy('name', 'asc')  // HIERARCHY-DISABLED: Changed from orderBy('level', 'desc')
             ->get()
             ->mapWithKeys(function ($role) {
                 $display = $role->display_name ?: str_replace(['-', '_'], ' ', ucwords($role->name, '-_'));

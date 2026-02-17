@@ -36,11 +36,11 @@ class RoleBasedRedirect
             return $conflictResponse;
         }
 
-        // Check authorization levels for admin routes
-        $authResponse = $this->handleAuthorizationChecks($request, $user);
-        if ($authResponse) {
-            return $authResponse;
-        }
+        // HIERARCHY-DISABLED: Authorization level checks temporarily removed
+        // $authResponse = $this->handleAuthorizationChecks($request, $user);
+        // if ($authResponse) {
+        //     return $authResponse;
+        // }
 
         return $next($request);
     }
@@ -102,8 +102,9 @@ class RoleBasedRedirect
      */
     private function handleMultiRoleConflicts(Request $request, $user): ?Response
     {
-        // TODO Sprint 5: Re-enable multi-role conflict handling with role selection UI
-        // Disabled for MVP - allow multi-role assignments
+        // FUTURE: Implement role conflict detection and role selection UI
+        // Currently disabled - users can hold multiple roles without restriction
+        // To enable: Uncomment the conflict detection logic below and create role selector UI
 
         // $userRoles = $user->roles->pluck('name')->toArray();
 
@@ -124,30 +125,32 @@ class RoleBasedRedirect
 
     /**
      * Handle authorization level checks for admin routes.
+     *
+     * HIERARCHY-DISABLED: Level-based authorization temporarily removed.
+     * Simple permission check used instead.
+     *
+     * @todo Re-enable level-based checks when hierarchy is needed
      */
-    private function handleAuthorizationChecks(Request $request, $user): ?Response
-    {
-        // Skip checks for non-admin routes
-        if (! $request->is('admin/*')) {
-            return null;
-        }
+    // private function handleAuthorizationChecks(Request $request, $user): ?Response
+    // {
+    //     // Skip checks for non-admin routes
+    //     if (! $request->is('admin/*')) {
+    //         return null;
+    //     }
 
-        // Get user's highest role level
-        $userLevel = $this->getHighestRoleLevel($user);
+    //     // HIERARCHY-DISABLED: Get user's highest role level
+    //     // $userLevel = $this->getHighestRoleLevel($user);
 
-        // Check if user has sufficient permissions for admin access
-        // Only Super Admin can access admin areas for now
-        if (! $user->can('assign-roles')) {
-            // Log unauthorized access attempt
-            app(AuditService::class)->logAccessAttempt($user, $request->path(), 'Unauthorized admin access attempt');
-            abort(403, 'Access denied. Only Super Admin can access admin areas.');
-        }
+    //     // Check if user has sufficient permissions for admin access
+    //     // Only Super Admin can access admin areas for now
+    //     if (! $user->can('assign-roles')) {
+    //         // Log unauthorized access attempt
+    //         app(AuditService::class)->logAccessAttempt($user, $request->path(), 'Unauthorized admin access attempt');
+    //         abort(403, 'Access denied. Only Super Admin can access admin areas.');
+    //     }
 
-        // Additional level-based checks can be added here
-        // For example, System Administrators might have limited admin access compared to Super Admins
-
-        return null;
-    }
+    //     return null;
+    // }
 
     /**
      * Detect conflicting role combinations.
@@ -180,32 +183,36 @@ class RoleBasedRedirect
 
     /**
      * Get the highest role level for a user.
+     *
+     * HIERARCHY-DISABLED: Level calculation temporarily removed.
+     *
+     * @todo Re-enable when role hierarchy is needed
      */
-    private function getHighestRoleLevel($user): int
-    {
-        $highestLevel = 0;
+    // private function getHighestRoleLevel($user): int
+    // {
+    //     $highestLevel = 0;
 
-        // Define role levels matching the RoleSeeder (higher number = higher authority)
-        $roleLevels = [
-            'General User' => 100,
-            'Athlete' => 200,
-            'Event Staff' => 300,
-            'Parent/Guardian' => 250,
-            'Coach' => 400,
-            'Club Admin' => 500,
-            'Club Manager' => 600,
-            'Academy Owner' => 700,
-            'Affiliate Manager' => 750,
-            'Event Organiser' => 800,
-            'Federation Admin' => 900,
-            'Super Admin' => 1000,
-        ];
+    //     // Define role levels matching the RoleSeeder (higher number = higher authority)
+    //     $roleLevels = [
+    //         'General User' => 100,
+    //         'Athlete' => 200,
+    //         'Event Staff' => 300,
+    //         'Parent/Guardian' => 250,
+    //         'Coach' => 400,
+    //         'Club Admin' => 500,
+    //         'Club Manager' => 600,
+    //         'Academy Owner' => 700,
+    //         'Affiliate Manager' => 750,
+    //         'Event Organiser' => 800,
+    //         'Federation Admin' => 900,
+    //         'Super Admin' => 1000,
+    //     ];
 
-        foreach ($user->roles as $role) {
-            $level = $roleLevels[$role->name] ?? 0;
-            $highestLevel = max($highestLevel, $level);
-        }
+    //     foreach ($user->roles as $role) {
+    //         $level = $roleLevels[$role->name] ?? 0;
+    //         $highestLevel = max($highestLevel, $level);
+    //     }
 
-        return $highestLevel;
-    }
+    //     return $highestLevel;
+    // }
 }

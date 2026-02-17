@@ -39,24 +39,29 @@ class DashboardController extends Controller
         $statsService = app(\App\Services\DashboardStatsService::class);
 
         $stats = $statsService->getAdminStats();
-        $performanceMetrics = $statsService->getPerformanceMetrics();
 
         return Inertia::render('admin/dashboard', [
             'stats' => $stats,
-            'performanceMetrics' => $performanceMetrics,
         ]);
     }
 
+    /**
+     * Get widgets for a specific role.
+     *
+     * ACADEMY-FIRST: Only Super Admin and General User widgets are active.
+     * Other role widgets are commented out until those features are built.
+     */
     private function getWidgetsForRole(string $role, $user): array
     {
         return match ($role) {
             'Super Admin' => $this->getSuperAdminWidgets($user),
-            'Coach' => $this->getCoachWidgets($user),
-            'Athlete' => $this->getAthleteWidgets($user),
-            'Parent/Guardian' => $this->getParentWidgets($user),
-            'Academy Owner' => $this->getAcademyOwnerWidgets($user),
-            'Club Manager' => $this->getClubManagerWidgets($user),
             'General User' => $this->getGeneralUserWidgets($user),
+            // FUTURE: Enable when features are built
+            // 'Academy Owner' => $this->getAcademyOwnerWidgets($user),
+            // 'Coach' => $this->getCoachWidgets($user),
+            // 'Athlete' => $this->getAthleteWidgets($user),
+            // 'Parent/Guardian' => $this->getParentWidgets($user),
+            // 'Club Manager' => $this->getClubManagerWidgets($user),
             default => []
         };
     }
@@ -96,141 +101,97 @@ class DashboardController extends Controller
         ];
     }
 
-    private function getCoachWidgets($user): array
-    {
-        return [
-            [
-                'type' => 'actions',
-                'title' => 'Coach Tools',
-                'actions' => [
-                    ['label' => 'My Athletes', 'route' => '#'], // Placeholder for future
-                    ['label' => 'Training Programs', 'route' => '#'], // Placeholder for future
-                    ['label' => 'Competition Results', 'route' => '#'], // Placeholder for future
-                ],
-                'priority' => 1,
-            ],
-            [
-                'type' => 'stats',
-                'title' => 'Coach Statistics',
-                'data' => [
-                    'active_athletes' => '—', // Placeholder for future
-                    'upcoming_events' => '—', // Placeholder for future
-                ],
-                'priority' => 2,
-            ],
-        ];
-    }
+    /**
+     * Coach widgets - FUTURE: Enable when Coach features are built.
+     */
+    // private function getCoachWidgets($user): array
+    // {
+    //     return [
+    //         [
+    //             'type' => 'actions',
+    //             'title' => 'Coach Tools',
+    //             'actions' => [
+    //                 ['label' => 'My Athletes', 'route' => '#'],
+    //                 ['label' => 'Training Programs', 'route' => '#'],
+    //                 ['label' => 'Competition Results', 'route' => '#'],
+    //             ],
+    //             'priority' => 1,
+    //         ],
+    //     ];
+    // }
 
-    private function getAthleteWidgets($user): array
-    {
-        return [
-            [
-                'type' => 'profile',
-                'title' => 'My Profile',
-                'data' => [
-                    'name' => $user->full_name,
-                    'email' => $user->email,
-                    'member_since' => $user->created_at->format('M Y'),
-                ],
-                'priority' => 1,
-            ],
-            [
-                'type' => 'performance',
-                'title' => 'Performance Stats',
-                'data' => [
-                    'recent_competitions' => '—', // Placeholder for future
-                    'upcoming_events' => '—', // Placeholder for future
-                    'training_streak' => '—', // Placeholder for future
-                ],
-                'priority' => 2,
-            ],
-            [
-                'type' => 'actions',
-                'title' => 'Quick Actions',
-                'actions' => [
-                    ['label' => 'View Results', 'route' => '#'], // Placeholder for future
-                    ['label' => 'Training Log', 'route' => '#'], // Placeholder for future
-                ],
-                'priority' => 3,
-            ],
-        ];
-    }
+    /**
+     * Athlete widgets - FUTURE: Enable when Athlete Portal features are built.
+     */
+    // private function getAthleteWidgets($user): array
+    // {
+    //     return [
+    //         [
+    //             'type' => 'profile',
+    //             'title' => 'My Profile',
+    //             'data' => [
+    //                 'name' => $user->full_name,
+    //                 'email' => $user->email,
+    //                 'member_since' => $user->created_at->format('M Y'),
+    //             ],
+    //             'priority' => 1,
+    //         ],
+    //     ];
+    // }
 
-    private function getParentWidgets($user): array
-    {
-        return [
-            [
-                'type' => 'family',
-                'title' => 'Family Overview',
-                'data' => [
-                    'linked_athletes' => '—', // Placeholder for future
-                    'upcoming_events' => '—', // Placeholder for future
-                ],
-                'priority' => 1,
-            ],
-            [
-                'type' => 'actions',
-                'title' => 'Family Tools',
-                'actions' => [
-                    ['label' => 'Manage Athletes', 'route' => '#'], // Placeholder for future
-                    ['label' => 'View Progress', 'route' => '#'], // Placeholder for future
-                ],
-                'priority' => 2,
-            ],
-        ];
-    }
+    /**
+     * Parent widgets - FUTURE: Enable when Parent Portal features are built.
+     */
+    // private function getParentWidgets($user): array
+    // {
+    //     return [
+    //         [
+    //             'type' => 'family',
+    //             'title' => 'Family Overview',
+    //             'data' => [
+    //                 'linked_athletes' => 0,
+    //                 'upcoming_events' => 0,
+    //             ],
+    //             'priority' => 1,
+    //         ],
+    //     ];
+    // }
 
-    private function getAcademyOwnerWidgets($user): array
-    {
-        return [
-            [
-                'type' => 'stats',
-                'title' => 'Academy Overview',
-                'data' => [
-                    'total_members' => '—', // Placeholder for future
-                    'active_programs' => '—', // Placeholder for future
-                    'monthly_revenue' => '—', // Placeholder for future
-                ],
-                'priority' => 1,
-            ],
-            [
-                'type' => 'actions',
-                'title' => 'Academy Management',
-                'actions' => [
-                    ['label' => 'Member Management', 'route' => '#'], // Placeholder for future
-                    ['label' => 'Program Setup', 'route' => '#'], // Placeholder for future
-                    ['label' => 'Financial Reports', 'route' => '#'], // Placeholder for future
-                ],
-                'priority' => 2,
-            ],
-        ];
-    }
+    /**
+     * Academy Owner widgets - FUTURE: Enable when Academy Management features are built.
+     */
+    // private function getAcademyOwnerWidgets($user): array
+    // {
+    //     return [
+    //         [
+    //             'type' => 'stats',
+    //             'title' => 'Academy Overview',
+    //             'data' => [
+    //                 'total_members' => 0,
+    //                 'active_programs' => 0,
+    //             ],
+    //             'priority' => 1,
+    //         ],
+    //     ];
+    // }
 
-    private function getClubManagerWidgets($user): array
-    {
-        return [
-            [
-                'type' => 'stats',
-                'title' => 'Club Statistics',
-                'data' => [
-                    'member_count' => '—', // Placeholder for future
-                    'event_count' => '—', // Placeholder for future
-                    'facility_usage' => '—', // Placeholder for future
-                ],
-                'priority' => 1,
-            ],
-            [
-                'type' => 'actions',
-                'title' => 'Club Management',
-                'actions' => [
-                    ['label' => 'Event Planning', 'route' => '#'], // Placeholder for future
-                    ['label' => 'Member Directory', 'route' => '#'], // Placeholder for future
-                    ['label' => 'Facility Booking', 'route' => '#'], // Placeholder for future
-                ],
-                'priority' => 2,
-            ],
-        ];
-    }
+    /**
+     * Club Manager widgets - FUTURE: Enable when Club Management features are built.
+     */
+    // private function getClubManagerWidgets($user): array
+    // {
+    //     return [
+    //         [
+    //             'type' => 'stats',
+    //             'title' => 'Club Statistics',
+    //             'data' => [
+    //                 'member_count' => 0,
+    //                 'event_count' => 0,
+    //             ],
+    //             'priority' => 1,
+    //         ],
+    //     ];
+    // }
 
     private function getGeneralUserWidgets($user): array
     {

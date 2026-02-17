@@ -37,7 +37,7 @@ test('super admin dashboard includes admin-specific widgets', function () {
     );
 });
 
-test('athlete sees athlete-specific widgets on unified dashboard', function () {
+test('athlete sees general user widgets on unified dashboard', function () {
     $this->seed(\Database\Seeders\RoleSeeder::class);
 
     $athlete = User::factory()->create();
@@ -48,8 +48,9 @@ test('athlete sees athlete-specific widgets on unified dashboard', function () {
     $response->assertOk()
         ->assertInertia(fn ($inertia) => $inertia
             ->component('dashboard')
-            ->has('widgets', 5) // Athlete (3) + General User (2) = 5 widgets
-            ->where('widgets.0.title', 'My Profile') // Highest priority athlete widget
+            // ACADEMY-FIRST: Athlete widgets commented out until features built
+            // Only General User widgets (2) are shown
+            ->has('widgets', 2)
         );
 });
 
@@ -64,7 +65,9 @@ test('multi-role user sees aggregated widgets from all roles', function () {
     $response->assertOk()
         ->assertInertia(fn ($inertia) => $inertia
             ->has('userRoles', 2) // Both roles
-            ->has('widgets', 5) // Athlete (3) + General User (2) = 5 widgets
+            // ACADEMY-FIRST: Athlete widgets commented out until features built
+            // Only General User widgets (2) are shown
+            ->has('widgets', 2)
         );
 });
 
@@ -79,7 +82,7 @@ test('unauthorized user cannot access admin role assignment page', function () {
     $response->assertForbidden();
 });
 
-test('coach cannot see super admin widgets', function () {
+test('coach sees general user widgets only', function () {
     $this->seed(\Database\Seeders\RoleSeeder::class);
 
     $coach = User::factory()->create();
@@ -88,11 +91,13 @@ test('coach cannot see super admin widgets', function () {
     $response = $this->actingAs($coach)->get('/dashboard');
 
     $response->assertInertia(fn ($inertia) => $inertia
-        ->has('widgets')
+        // ACADEMY-FIRST: Coach widgets commented out until features built
+        // Only General User widgets (2) are shown
+        ->has('widgets', 2)
         ->where('widgets', function ($widgets) {
             // Ensure no admin widgets are present
             foreach ($widgets as $widget) {
-                if (in_array($widget['title'], ['System Overview', 'User Management', 'Security Audit'])) {
+                if (in_array($widget['title'], ['System Overview', 'Admin Actions', 'Security Status'])) {
                     return false;
                 }
             }

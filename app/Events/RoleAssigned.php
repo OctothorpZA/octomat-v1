@@ -3,15 +3,23 @@
 namespace App\Events;
 
 use App\Models\User;
-use Illuminate\Broadcasting\InteractsWithSockets;
-use Illuminate\Broadcasting\PrivateChannel;
-use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
-class RoleAssigned implements ShouldBroadcast
+/**
+ * Event dispatched when a role is assigned to a user.
+ *
+ * BROADCASTING REMOVED: This event no longer broadcasts in real-time.
+ * It is dispatched for audit logging purposes only.
+ * To re-enable broadcasting in the future:
+ * 1. Implement ShouldBroadcast interface
+ * 2. Add broadcastOn(), broadcastAs(), broadcastWith() methods
+ * 3. Configure broadcasting driver in .env (pusher, redis, etc.)
+ * 4. Set up Laravel Echo on the frontend
+ */
+class RoleAssigned
 {
-    use Dispatchable, InteractsWithSockets, SerializesModels;
+    use Dispatchable, SerializesModels;
 
     public User $user;
 
@@ -27,45 +35,5 @@ class RoleAssigned implements ShouldBroadcast
         $this->user = $user;
         $this->role = $role;
         $this->admin = $admin;
-    }
-
-    /**
-     * Get the channels the event should broadcast on.
-     *
-     * @return array<int, \Illuminate\Broadcasting\Channel>
-     */
-    public function broadcastOn(): array
-    {
-        return [
-            new PrivateChannel('admin.'.$this->admin->id),
-        ];
-    }
-
-    /**
-     * The event's broadcast name.
-     */
-    public function broadcastAs(): string
-    {
-        return 'role.assigned';
-    }
-
-    /**
-     * Get the data to broadcast.
-     */
-    public function broadcastWith(): array
-    {
-        return [
-            'user' => [
-                'id' => $this->user->id,
-                'name' => $this->user->name,
-                'email' => $this->user->email,
-            ],
-            'role' => $this->role,
-            'admin' => [
-                'id' => $this->admin->id,
-                'name' => $this->admin->name,
-            ],
-            'timestamp' => now()->toISOString(),
-        ];
     }
 }

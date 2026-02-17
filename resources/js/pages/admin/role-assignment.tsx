@@ -1,4 +1,4 @@
-import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
+import { Head, Link, router, useForm } from '@inertiajs/react';
 import { ChevronLeft, ChevronRight, Loader2, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
@@ -26,12 +26,6 @@ import { assign } from '@/routes/admin/roles';
 import { type BreadcrumbItem } from '@/types';
 
 // ── Interfaces ──────────────────────────────────────────────────────────────
-
-interface BroadcastEvent {
-    admin: { id: number; name: string; email: string };
-    user: { id: number; name: string; email: string };
-    role: string;
-}
 
 interface Role {
     id: number;
@@ -85,13 +79,9 @@ export default function RoleAssignment({
     const [search, setSearch] = useState(filters?.search || '');
     const [roleFilter, setRoleFilter] = useState(filters?.role || '');
     const [users, setUsers] = useState(initialUsers);
-    const [connectionStatus, setConnectionStatus] = useState<
-        'connecting' | 'connected' | 'disconnected' | 'error'
-    >('connecting');
     const [processingId, setProcessingId] = useState<number | null>(null);
 
     const debouncedSearch = useDebounce(search, 300);
-    const { auth } = usePage().props as { auth?: { user?: { id: number } } };
 
     const assignForm = useForm({
         selectedUser: '',
@@ -114,82 +104,22 @@ export default function RoleAssignment({
         }
 
         router.get(
-            assign().url, // ← using named route (v1 style); fallback: '/admin/roles/assign'
+            assign().url,
             { search: debouncedSearch, role: roleFilter },
             {
                 preserveState: true,
                 preserveScroll: true,
                 replace: true,
                 only: ['users', 'filters'],
-            }
+            },
         );
     }, [debouncedSearch, roleFilter]);
 
-    // Real-time updates
-    useEffect(() => {
-        if (!auth?.user?.id || !(window as any).Echo) return;
-
-        setConnectionStatus('connecting');
-
-        const channel = (window as any).Echo.private(`admin.${auth.user.id}`);
-
-        channel
-            .subscribed(() => {
-                console.log('Connected to real-time admin channel');
-                setConnectionStatus('connected');
-            })
-            .error(() => setConnectionStatus('error'));
-
-        channel.listen('.role.assigned', (event: BroadcastEvent) => {
-            setUsers((prev) => ({
-                ...prev,
-                data: prev.data.map((u) =>
-                    u.id === event.user.id
-                        ? {
-                              ...u,
-                              roles: [
-                                  ...u.roles,
-                                  {
-                                      id: Date.now(), // temp ID for React key
-                                      name: event.role,
-                                      display_name: roles[event.role] || event.role,
-                                  },
-                              ],
-                          }
-                        : u
-                ),
-            }));
-
-            (window as any).showToast?.(
-                `Role "${event.role}" assigned to ${event.user.name}`,
-                'success'
-            );
-        });
-
-        channel.listen('.role.removed', (event: BroadcastEvent) => {
-            setUsers((prev) => ({
-                ...prev,
-                data: prev.data.map((u) =>
-                    u.id === event.user.id
-                        ? {
-                              ...u,
-                              roles: u.roles.filter((r) => r.name !== event.role),
-                          }
-                        : u
-                ),
-            }));
-
-            (window as any).showToast?.(
-                `Role "${event.role}" removed from ${event.user.name}`,
-                'info'
-            );
-        });
-
-        return () => {
-            setConnectionStatus('disconnected');
-            (window as any).Echo.leave(`admin.${auth.user.id}`);
-        };
-    }, [auth?.user?.id, roles]);
+    // BROADCASTING REMOVED: Real-time updates via Echo have been removed.
+    // To re-enable in the future:
+    // 1. Configure broadcasting driver in .env (pusher, redis, etc.)
+    // 2. Import Echo and listen for 'role.assigned' and 'role.removed' events
+    // 3. Update UI optimistically or refresh data from server
 
     const handleGlobalAssign = (e: React.FormEvent) => {
         e.preventDefault();
@@ -208,12 +138,17 @@ export default function RoleAssignment({
             {
                 preserveScroll: true,
                 onFinish: () => setProcessingId(null),
-            }
+            },
         );
     };
 
     const handleRemove = (userId: number, roleName: string) => {
-        if (!confirm(`Remove the "${roles[roleName] || roleName}" role from this user?`)) return;
+        if (
+            !confirm(
+                `Remove the "${roles[roleName] || roleName}" role from this user?`,
+            )
+        )
+            return;
         setProcessingId(userId);
         router.post(
             '/admin/roles/remove',
@@ -221,7 +156,7 @@ export default function RoleAssignment({
             {
                 preserveScroll: true,
                 onFinish: () => setProcessingId(null),
-            }
+            },
         );
     };
 
@@ -235,9 +170,15 @@ export default function RoleAssignment({
         { title: 'Role Assignment', href: assign().url },
     ];
 
-    // ── Precise showing range (restored from v1) ─────────────────────────────
-    const from = users.data.length > 0 ? (users.current_page - 1) * users.per_page + 1 : 0;
-    const to = users.data.length > 0 ? Math.min(users.current_page * users.per_page, users.total) : 0;
+    // ── Precise showing range ─────────────────────────────
+    const from =
+        users.data.length > 0
+            ? (users.current_page - 1) * users.per_page + 1
+            : 0;
+    const to =
+        users.data.length > 0
+            ? Math.min(users.current_page * users.per_page, users.total)
+            : 0;
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -247,25 +188,14 @@ export default function RoleAssignment({
                 {/* Header */}
                 <div className="flex items-center justify-between">
                     <div>
-                        <h1 className="text-2xl font-bold tracking-tight">Role Assignment</h1>
+                        <h1 className="text-2xl font-bold tracking-tight">
+                            Role Assignment
+                        </h1>
                         <p className="text-muted-foreground">
                             Manage user permissions and access levels.
                         </p>
                     </div>
-                    <Badge
-                        variant={
-                            connectionStatus === 'connected'
-                                ? 'default'
-                                : connectionStatus === 'connecting'
-                                  ? 'secondary'
-                                  : 'destructive'
-                        }
-                    >
-                        {connectionStatus === 'connected' && '🟢 Live'}
-                        {connectionStatus === 'connecting' && '🟡 Connecting'}
-                        {connectionStatus === 'disconnected' && '⚪ Disconnected'}
-                        {connectionStatus === 'error' && '🔴 Connection Error'}
-                    </Badge>
+                    {/* BROADCASTING REMOVED: Connection status badge removed */}
                 </div>
 
                 {/* Filters */}
@@ -273,7 +203,7 @@ export default function RoleAssignment({
                     <CardContent className="pt-6">
                         <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                             <div>
-                                <label className="block text-sm font-medium mb-1.5">
+                                <label className="mb-1.5 block text-sm font-medium">
                                     Search Users
                                 </label>
                                 <input
@@ -285,20 +215,24 @@ export default function RoleAssignment({
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium mb-1.5">
+                                <label className="mb-1.5 block text-sm font-medium">
                                     Filter by Role
                                 </label>
                                 <select
                                     value={roleFilter}
-                                    onChange={(e) => setRoleFilter(e.target.value)}
+                                    onChange={(e) =>
+                                        setRoleFilter(e.target.value)
+                                    }
                                     className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm focus:border-primary focus:ring-1 focus:ring-primary"
                                 >
                                     <option value="">All Roles</option>
-                                    {Object.entries(roles).map(([name, display]) => (
-                                        <option key={name} value={name}>
-                                            {display}
-                                        </option>
-                                    ))}
+                                    {Object.entries(roles).map(
+                                        ([name, display]) => (
+                                            <option key={name} value={name}>
+                                                {display}
+                                            </option>
+                                        ),
+                                    )}
                                 </select>
                             </div>
                         </div>
@@ -306,9 +240,21 @@ export default function RoleAssignment({
                         {(search || roleFilter) && (
                             <div className="mt-4 flex items-center gap-3 text-sm text-muted-foreground">
                                 <span>Active filters:</span>
-                                {search && <span className="font-medium">"{search}"</span>}
-                                {roleFilter && <span className="font-medium">{roles[roleFilter]}</span>}
-                                <Button variant="ghost" size="sm" onClick={clearFilters}>
+                                {search && (
+                                    <span className="font-medium">
+                                        "{search}"
+                                    </span>
+                                )}
+                                {roleFilter && (
+                                    <span className="font-medium">
+                                        {roles[roleFilter]}
+                                    </span>
+                                )}
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={clearFilters}
+                                >
                                     Clear
                                 </Button>
                             </div>
@@ -322,19 +268,29 @@ export default function RoleAssignment({
                         <CardTitle>Assign Role to User</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <form onSubmit={handleGlobalAssign} className="space-y-4">
+                        <form
+                            onSubmit={handleGlobalAssign}
+                            className="space-y-4"
+                        >
                             <div>
-                                <label className="block text-sm font-medium mb-1.5">User</label>
+                                <label className="mb-1.5 block text-sm font-medium">
+                                    User
+                                </label>
                                 <Select
                                     value={assignForm.data.selectedUser}
-                                    onValueChange={(v) => assignForm.setData('selectedUser', v)}
+                                    onValueChange={(v) =>
+                                        assignForm.setData('selectedUser', v)
+                                    }
                                 >
                                     <SelectTrigger>
                                         <SelectValue placeholder="Select user..." />
                                     </SelectTrigger>
                                     <SelectContent>
                                         {users.data.map((user) => (
-                                            <SelectItem key={user.id} value={user.id.toString()}>
+                                            <SelectItem
+                                                key={user.id}
+                                                value={user.id.toString()}
+                                            >
                                                 {user.full_name ||
                                                     `${user.first_name || ''} ${user.last_name || ''}`.trim() ||
                                                     user.email}
@@ -343,38 +299,53 @@ export default function RoleAssignment({
                                     </SelectContent>
                                 </Select>
                                 {assignForm.errors.selectedUser && (
-                                    <p className="text-sm text-destructive mt-1">
+                                    <p className="mt-1 text-sm text-destructive">
                                         {assignForm.errors.selectedUser}
                                     </p>
                                 )}
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium mb-1.5">Role</label>
+                                <label className="mb-1.5 block text-sm font-medium">
+                                    Role
+                                </label>
                                 <Select
                                     value={assignForm.data.selectedRole}
-                                    onValueChange={(v) => assignForm.setData('selectedRole', v)}
+                                    onValueChange={(v) =>
+                                        assignForm.setData('selectedRole', v)
+                                    }
                                 >
                                     <SelectTrigger>
                                         <SelectValue placeholder="Select role..." />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        {Object.entries(roles).map(([name, display]) => (
-                                            <SelectItem key={name} value={name}>
-                                                {display}
-                                            </SelectItem>
-                                        ))}
+                                        {Object.entries(roles).map(
+                                            ([name, display]) => (
+                                                <SelectItem
+                                                    key={name}
+                                                    value={name}
+                                                >
+                                                    {display}
+                                                </SelectItem>
+                                            ),
+                                        )}
                                     </SelectContent>
                                 </Select>
                                 {assignForm.errors.selectedRole && (
-                                    <p className="text-sm text-destructive mt-1">
+                                    <p className="mt-1 text-sm text-destructive">
                                         {assignForm.errors.selectedRole}
                                     </p>
                                 )}
                             </div>
 
-                            <Button type="submit" disabled={assignForm.processing} className="w-full">
-                                {assignForm.processing ? 'Assigning...' : 'Assign Role'}
+                            <Button
+                                type="submit"
+                                disabled={assignForm.processing}
+                                className="w-full"
+                            >
+                                {assignForm.processing
+                                    ? 'Assigning...'
+                                    : 'Assign Role'}
                             </Button>
                         </form>
                     </CardContent>
@@ -392,16 +363,30 @@ export default function RoleAssignment({
                         >
                             <TableHeader>
                                 <TableRow role="row">
-                                    <TableHead role="columnheader" aria-sort="none" className="w-[240px]">
+                                    <TableHead
+                                        role="columnheader"
+                                        aria-sort="none"
+                                        className="w-[240px]"
+                                    >
                                         User
                                     </TableHead>
-                                    <TableHead role="columnheader" aria-sort="none">
+                                    <TableHead
+                                        role="columnheader"
+                                        aria-sort="none"
+                                    >
                                         Roles
                                     </TableHead>
-                                    <TableHead role="columnheader" aria-sort="none" className="w-[300px]">
+                                    <TableHead
+                                        role="columnheader"
+                                        aria-sort="none"
+                                        className="w-[300px]"
+                                    >
                                         Add / Manage
                                     </TableHead>
-                                    <TableHead role="columnheader" className="w-[140px] text-right">
+                                    <TableHead
+                                        role="columnheader"
+                                        className="w-[140px] text-right"
+                                    >
                                         Actions
                                     </TableHead>
                                 </TableRow>
@@ -415,7 +400,7 @@ export default function RoleAssignment({
                                                     `${user.first_name || ''} ${user.last_name || ''}`.trim() ||
                                                     user.email}
                                             </div>
-                                            <div className="text-xs text-muted-foreground mt-0.5">
+                                            <div className="mt-0.5 text-xs text-muted-foreground">
                                                 {user.email}
                                             </div>
                                         </TableCell>
@@ -431,9 +416,17 @@ export default function RoleAssignment({
                                                         >
                                                             {role.display_name}
                                                             <button
-                                                                onClick={() => handleRemove(user.id, role.name)}
-                                                                className="ml-1 rounded hover:bg-destructive/70 hover:text-white p-0.5 -mr-1 transition-colors"
-                                                                disabled={processingId === user.id}
+                                                                onClick={() =>
+                                                                    handleRemove(
+                                                                        user.id,
+                                                                        role.name,
+                                                                    )
+                                                                }
+                                                                className="-mr-1 ml-1 rounded p-0.5 transition-colors hover:bg-destructive/70 hover:text-white"
+                                                                disabled={
+                                                                    processingId ===
+                                                                    user.id
+                                                                }
                                                             >
                                                                 <X className="h-3.5 w-3.5" />
                                                             </button>
@@ -451,18 +444,30 @@ export default function RoleAssignment({
                                             <div className="flex items-center gap-2">
                                                 <select
                                                     className="h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus:border-primary focus:ring-1 focus:ring-primary disabled:opacity-50"
-                                                    onChange={(e) => handleInlineAssign(user.id, e.target.value)}
+                                                    onChange={(e) =>
+                                                        handleInlineAssign(
+                                                            user.id,
+                                                            e.target.value,
+                                                        )
+                                                    }
                                                     value=""
-                                                    disabled={processingId === user.id}
+                                                    disabled={
+                                                        processingId === user.id
+                                                    }
                                                 >
                                                     <option value="" disabled>
                                                         + Add role...
                                                     </option>
-                                                    {Object.entries(roles).map(([name, display]) => (
-                                                        <option key={name} value={name}>
-                                                            {display}
-                                                        </option>
-                                                    ))}
+                                                    {Object.entries(roles).map(
+                                                        ([name, display]) => (
+                                                            <option
+                                                                key={name}
+                                                                value={name}
+                                                            >
+                                                                {display}
+                                                            </option>
+                                                        ),
+                                                    )}
                                                 </select>
 
                                                 {processingId === user.id && (
@@ -471,13 +476,22 @@ export default function RoleAssignment({
                                             </div>
                                         </TableCell>
 
-                                        <TableCell role="cell" className="text-right">
+                                        <TableCell
+                                            role="cell"
+                                            className="text-right"
+                                        >
                                             <Button
                                                 variant="ghost"
                                                 size="sm"
                                                 onClick={() => {
-                                                    if (confirm(`Impersonate ${user.full_name || user.email}?`)) {
-                                                        router.post(`/impersonate/take/${user.id}`);
+                                                    if (
+                                                        confirm(
+                                                            `Impersonate ${user.full_name || user.email}?`,
+                                                        )
+                                                    ) {
+                                                        router.post(
+                                                            `/impersonate/take/${user.id}`,
+                                                        );
                                                     }
                                                 }}
                                             >
@@ -515,7 +529,8 @@ export default function RoleAssignment({
                                 </Button>
 
                                 <span className="px-3">
-                                    Page {users.current_page} / {users.last_page}
+                                    Page {users.current_page} /{' '}
+                                    {users.last_page}
                                 </span>
 
                                 <Button

@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\Admin\RoleAssignmentController;
+use App\Http\Controllers\DashboardController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use Laravel\Fortify\Features;
@@ -10,13 +12,9 @@ Route::get('/', function () {
     ]);
 })->name('home');
 
-use App\Http\Controllers\DashboardController;
-
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
 });
-
-use App\Http\Controllers\Admin\RoleAssignmentController;
 
 Route::middleware(['auth'])->prefix('admin')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'admin'])->name('admin.dashboard');

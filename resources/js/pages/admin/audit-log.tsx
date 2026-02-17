@@ -1,7 +1,5 @@
-import { Head, usePage } from '@inertiajs/react';
-import { useEffect, useState } from 'react';
+import { Head } from '@inertiajs/react';
 
-import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
     Table,
@@ -55,114 +53,13 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
-export default function AuditLog({
-    auditLogs: initialLogs,
-    stats: initialStats,
-}: AuditLogProps) {
-    const [auditLogs, setAuditLogs] = useState(initialLogs);
-    const [stats, setStats] = useState(initialStats);
-    const [connectionStatus, setConnectionStatus] = useState<
-        'connecting' | 'connected' | 'disconnected' | 'error'
-    >('disconnected');
-    const { auth } = usePage().props as { auth?: { user?: { id: number } } };
-
-    // Real-time audit log updates
-    useEffect(() => {
-        if (!auth?.user?.id) return;
-
-        setConnectionStatus('connecting');
-
-        // Listen to admin channel for audit events
-        const adminChannel = (
-            window as Window & {
-                Echo?: {
-                    private: (channel: string) => {
-                        subscribed: (callback: () => void) => void;
-                        error: (callback: (error: Error) => void) => void;
-                        listen: (
-                            event: string,
-                            callback: (event: Record<string, unknown>) => void,
-                        ) => void;
-                    };
-                };
-            }
-        ).Echo?.private(`admin.${auth.user.id}`);
-
-        if (!adminChannel) return;
-
-        adminChannel.subscribed(() => {
-            console.log('Connected to admin audit channel');
-            setConnectionStatus('connected');
-        });
-
-        adminChannel.error((error: Error) => {
-            console.error('Admin audit channel error:', error);
-            setConnectionStatus('error');
-        });
-
-        // Listen for role changes (which create audit logs)
-        adminChannel.listen(
-            '.role.assigned',
-            (event: Record<string, unknown>) => {
-                // Update stats in real-time
-                setStats((prevStats) => ({
-                    ...prevStats,
-                    total_logs: prevStats.total_logs + 1,
-                    recent_logs: prevStats.recent_logs + 1,
-                    role_assignments: prevStats.role_assignments + 1,
-                }));
-
-                // Add new audit log entry (simulated - in real app this would come from server)
-                const newLog: AuditLog = {
-                    id: Date.now(),
-                    admin_name: event.admin.name,
-                    target_user_name: event.user.name,
-                    action: 'assigned',
-                    role: event.role,
-                    ip_address: '127.0.0.1', // Would come from server
-                    timestamp: new Date().toISOString(),
-                };
-
-                setAuditLogs((prevLogs) => ({
-                    ...prevLogs,
-                    data: [newLog, ...prevLogs.data],
-                    total: prevLogs.total + 1,
-                }));
-            },
-        );
-
-        adminChannel.listen('.role.removed', (event: any) => {
-            // Update stats in real-time
-            setStats((prevStats) => ({
-                ...prevStats,
-                total_logs: prevStats.total_logs + 1,
-                recent_logs: prevStats.recent_logs + 1,
-                role_removals: prevStats.role_removals + 1,
-            }));
-
-            // Add new audit log entry
-            const newLog: AuditLog = {
-                id: Date.now(),
-                admin_name: event.admin.name,
-                target_user_name: event.user.name,
-                action: 'removed',
-                role: event.role,
-                ip_address: '127.0.0.1',
-                timestamp: new Date().toISOString(),
-            };
-
-            setAuditLogs((prevLogs) => ({
-                ...prevLogs,
-                data: [newLog, ...prevLogs.data],
-                total: prevLogs.total + 1,
-            }));
-        });
-
-        return () => {
-            setConnectionStatus('disconnected');
-            (window as any).Echo.leave(`admin.${auth.user.id}`);
-        };
-    }, [auth?.user?.id]);
+export default function AuditLog({ auditLogs, stats }: AuditLogProps) {
+    // BROADCASTING REMOVED: Real-time updates via Echo have been removed.
+    // Audit logs are now static and refreshed via standard Inertia page reloads.
+    // To re-enable real-time updates in the future:
+    // 1. Configure broadcasting driver in .env (pusher, redis, etc.)
+    // 2. Set up Laravel Echo
+    // 3. Listen for 'role.assigned' and 'role.removed' events on admin channels
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -176,22 +73,7 @@ export default function AuditLog({
                             Monitor all role assignment and removal activities.
                         </p>
                     </div>
-                    <Badge
-                        variant={
-                            connectionStatus === 'connected'
-                                ? 'default'
-                                : connectionStatus === 'connecting'
-                                  ? 'secondary'
-                                  : 'destructive'
-                        }
-                        className="text-xs"
-                    >
-                        {connectionStatus === 'connected' && '🟢 Live Updates'}
-                        {connectionStatus === 'connecting' && '🟡 Connecting'}
-                        {connectionStatus === 'disconnected' &&
-                            '⚪ Disconnected'}
-                        {connectionStatus === 'error' && '🔴 Connection Error'}
-                    </Badge>
+                    {/* BROADCASTING REMOVED: Connection status badge removed */}
                 </div>
 
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">

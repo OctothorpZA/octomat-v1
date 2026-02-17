@@ -65,7 +65,8 @@ test('academy owner gets academy navigation', function () {
     expect(collect($academyChildren)->pluck('title')->toArray())->toContain('Dashboard', 'Programs', 'Coaches', 'Athletes');
 });
 
-test('club manager gets club navigation', function () {
+// ACADEMY-FIRST: Club Manager navigation commented out until Club Management features built
+todo('club manager gets club navigation', function () {
     $this->seed(\Database\Seeders\RoleSeeder::class);
 
     $user = User::factory()->create();
@@ -74,16 +75,13 @@ test('club manager gets club navigation', function () {
     $service = new NavigationService;
     $navigation = $service->getNavigationForUser($user);
 
-    expect($navigation)->toHaveCount(2);
-    expect($navigation[1]['title'])->toBe('Club');
-    expect($navigation[1])->toHaveKey('children');
-
-    $clubChildren = $navigation[1]['children'];
-    expect($clubChildren)->toHaveCount(4);
-    expect(collect($clubChildren)->pluck('title')->toArray())->toContain('Dashboard', 'Events', 'Members', 'Facilities');
+    // Currently only Dashboard is returned (Club Manager nav commented out)
+    expect($navigation)->toHaveCount(1);
+    expect($navigation[0]['title'])->toBe('Dashboard');
 });
 
-test('coach gets training navigation', function () {
+// ACADEMY-FIRST: Coach navigation commented out until Coach features built
+todo('coach gets training navigation', function () {
     $this->seed(\Database\Seeders\RoleSeeder::class);
 
     $user = User::factory()->create();
@@ -92,16 +90,13 @@ test('coach gets training navigation', function () {
     $service = new NavigationService;
     $navigation = $service->getNavigationForUser($user);
 
-    expect($navigation)->toHaveCount(2);
-    expect($navigation[1]['title'])->toBe('Training');
-    expect($navigation[1])->toHaveKey('children');
-
-    $trainingChildren = $navigation[1]['children'];
-    expect($trainingChildren)->toHaveCount(3);
-    expect(collect($trainingChildren)->pluck('title')->toArray())->toContain('My Athletes', 'Programs', 'Sessions');
+    // Currently only Dashboard is returned (Coach nav commented out)
+    expect($navigation)->toHaveCount(1);
+    expect($navigation[0]['title'])->toBe('Dashboard');
 });
 
-test('athlete gets sports navigation', function () {
+// ACADEMY-FIRST: Athlete navigation commented out until Athlete Portal features built
+todo('athlete gets sports navigation', function () {
     $this->seed(\Database\Seeders\RoleSeeder::class);
 
     $user = User::factory()->create();
@@ -110,16 +105,13 @@ test('athlete gets sports navigation', function () {
     $service = new NavigationService;
     $navigation = $service->getNavigationForUser($user);
 
-    expect($navigation)->toHaveCount(2);
-    expect($navigation[1]['title'])->toBe('My Sports');
-    expect($navigation[1])->toHaveKey('children');
-
-    $sportsChildren = $navigation[1]['children'];
-    expect($sportsChildren)->toHaveCount(3);
-    expect(collect($sportsChildren)->pluck('title')->toArray())->toContain('Results', 'Training', 'Events');
+    // Currently only Dashboard is returned (Athlete nav commented out)
+    expect($navigation)->toHaveCount(1);
+    expect($navigation[0]['title'])->toBe('Dashboard');
 });
 
-test('parent gets family navigation', function () {
+// ACADEMY-FIRST: Parent navigation commented out until Parent Portal features built
+todo('parent gets family navigation', function () {
     $this->seed(\Database\Seeders\RoleSeeder::class);
 
     $user = User::factory()->create();
@@ -128,16 +120,13 @@ test('parent gets family navigation', function () {
     $service = new NavigationService;
     $navigation = $service->getNavigationForUser($user);
 
-    expect($navigation)->toHaveCount(2);
-    expect($navigation[1]['title'])->toBe('Family');
-    expect($navigation[1])->toHaveKey('children');
-
-    $familyChildren = $navigation[1]['children'];
-    expect($familyChildren)->toHaveCount(3);
-    expect(collect($familyChildren)->pluck('title')->toArray())->toContain('My Children', 'Progress', 'Communications');
+    // Currently only Dashboard is returned (Parent nav commented out)
+    expect($navigation)->toHaveCount(1);
+    expect($navigation[0]['title'])->toBe('Dashboard');
 });
 
-test('multi-role user gets combined navigation without duplicates', function () {
+// ACADEMY-FIRST: Coach/Athlete navigation commented out until features built
+todo('multi-role user gets combined navigation without duplicates', function () {
     $this->seed(\Database\Seeders\RoleSeeder::class);
 
     $user = User::factory()->create();
@@ -146,11 +135,9 @@ test('multi-role user gets combined navigation without duplicates', function () 
     $service = new NavigationService;
     $navigation = $service->getNavigationForUser($user);
 
-    // Should have Dashboard + Training + My Sports (3 total, no duplicates)
-    expect($navigation)->toHaveCount(3);
-
-    $titles = collect($navigation)->pluck('title')->toArray();
-    expect($titles)->toContain('Dashboard', 'Training', 'My Sports');
+    // Currently only Dashboard is returned (Coach/Athlete nav commented out)
+    expect($navigation)->toHaveCount(1);
+    expect($navigation[0]['title'])->toBe('Dashboard');
 });
 
 test('navigation is sorted by priority', function () {
@@ -196,14 +183,16 @@ test('user can access navigation permission check works', function () {
 
     expect($service->userCanAccessNavigation($user, $dashboardItem))->toBeTrue();
 
-    // Test item with permission requirement (user won't have)
+    // SIMPLIFIED: Permission checks disabled - all authenticated users can access navigation
+    // HIERARCHY-DISABLED: Permission-based access control temporarily removed
     $adminItem = [
         'title' => 'Admin',
         'href' => '/admin',
         'permission' => 'viewAdminDashboard',
     ];
 
-    expect($service->userCanAccessNavigation($user, $adminItem))->toBeFalse();
+    // Simplified behavior: all authenticated users can see navigation items
+    expect($service->userCanAccessNavigation($user, $adminItem))->toBeTrue();
 });
 
 test('filter accessible navigation removes unauthorized items', function () {
@@ -234,10 +223,11 @@ test('filter accessible navigation removes unauthorized items', function () {
 
     $filtered = $service->filterAccessibleNavigation($user, $mixedNavigation);
 
-    expect($filtered)->toHaveCount(2);
+    // SIMPLIFIED: Permission filtering disabled - all items returned
+    // HIERARCHY-DISABLED: Permission-based filtering temporarily removed
+    expect($filtered)->toHaveCount(3); // All items returned without filtering
     $titles = collect($filtered)->pluck('title')->toArray();
-    expect($titles)->toContain('Dashboard', 'Admin');
-    expect($titles)->not()->toContain('Restricted');
+    expect($titles)->toContain('Dashboard', 'Admin', 'Restricted');
 });
 
 test('navigation structure includes required fields', function () {

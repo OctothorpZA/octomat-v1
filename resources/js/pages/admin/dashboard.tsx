@@ -1,5 +1,4 @@
-import { Head, usePage } from '@inertiajs/react';
-import { useEffect, useState } from 'react';
+import { Head } from '@inertiajs/react';
 
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -53,48 +52,16 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
-export default function AdminDashboard({
-    stats,
-    performanceMetrics,
-}: AdminDashboardProps) {
-    const [liveStats, setLiveStats] = useState(stats);
-    const [connectionStatus, setConnectionStatus] = useState<
-        'connecting' | 'connected' | 'disconnected' | 'error'
-    >('connecting');
-    const { auth } = usePage().props as any;
+export default function AdminDashboard({ stats }: AdminDashboardProps) {
+    // BROADCASTING REMOVED: Real-time updates via Echo have been removed.
+    // Stats are now static and refreshed via standard Inertia page reloads.
+    // To re-enable real-time updates in the future:
+    // 1. Configure broadcasting driver in .env (pusher, redis, etc.)
+    // 2. Set up Laravel Echo
+    // 3. Listen for 'stats.updated' events on the 'admin-stats' channel
 
-    // Real-time stats updates
-    useEffect(() => {
-        if (!auth?.user?.id) return;
+    const recentActivities = stats.recent_activities || [];
 
-        setConnectionStatus('connecting');
-
-        // Listen for admin stats updates
-        const statsChannel = (window as any).Echo.channel('admin-stats');
-
-        statsChannel.subscribed(() => {
-            console.log('Connected to admin stats channel');
-            setConnectionStatus('connected');
-        });
-
-        statsChannel.error((error: any) => {
-            console.error('Admin stats channel error:', error);
-            setConnectionStatus('error');
-        });
-
-        // Listen for stats updates
-        statsChannel.listen('.stats.updated', (event: any) => {
-            console.log('Stats updated:', event);
-            setLiveStats(event.stats);
-        });
-
-        return () => {
-            setConnectionStatus('disconnected');
-            (window as any).Echo.leave('admin-stats');
-        };
-    }, [auth?.user?.id]);
-
-    const recentActivities = liveStats.recent_activities || [];
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Admin Dashboard" />
@@ -117,10 +84,10 @@ export default function AdminDashboard({
                         </CardHeader>
                         <CardContent>
                             <div className="text-2xl font-bold">
-                                {liveStats.total_users}
+                                {stats.total_users}
                             </div>
                             <p className="text-xs text-muted-foreground">
-                                +{liveStats.recent_registrations} this week
+                                +{stats.recent_registrations} this week
                             </p>
                         </CardContent>
                     </Card>
@@ -133,7 +100,7 @@ export default function AdminDashboard({
                         </CardHeader>
                         <CardContent>
                             <div className="text-2xl font-bold">
-                                {liveStats.total_roles}
+                                {stats.total_roles}
                             </div>
                             <p className="text-xs text-muted-foreground">
                                 System roles configured
@@ -149,7 +116,7 @@ export default function AdminDashboard({
                         </CardHeader>
                         <CardContent>
                             <div className="text-2xl font-bold">
-                                {liveStats.active_users_today}
+                                {stats.active_users_today}
                             </div>
                             <p className="text-xs text-muted-foreground">
                                 Users active today
@@ -165,7 +132,7 @@ export default function AdminDashboard({
                         </CardHeader>
                         <CardContent>
                             <div className="text-2xl font-bold">
-                                {liveStats.role_assignments_today}
+                                {stats.role_assignments_today}
                             </div>
                             <p className="text-xs text-muted-foreground">
                                 Today
@@ -181,7 +148,7 @@ export default function AdminDashboard({
                         </CardHeader>
                         <CardContent>
                             <div className="text-2xl font-bold">
-                                {liveStats.audit_logs_this_week}
+                                {stats.audit_logs_this_week}
                             </div>
                             <p className="text-xs text-muted-foreground">
                                 This week
@@ -266,7 +233,7 @@ export default function AdminDashboard({
                         </CardHeader>
                         <CardContent>
                             <div className="text-2xl font-bold">
-                                {liveStats.active_users_today}
+                                {stats.active_users_today}
                             </div>
                             <p className="text-xs text-muted-foreground">
                                 Users active today

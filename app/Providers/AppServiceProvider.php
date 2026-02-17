@@ -8,6 +8,8 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
+use Lab404\Impersonate\Events\LeaveImpersonation;
+use Lab404\Impersonate\Events\TakeImpersonation;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -60,7 +62,9 @@ class AppServiceProvider extends ServiceProvider
                 'timestamp' => now()->toISOString(),
             ]);
 
-            // TODO: Sprint 4 - Store in audit log database table
+            // FUTURE: Store impersonation events in audit_logs database table
+            // Currently logging to Laravel log only. To enable DB storage:
+            // app(AuditService::class)->logImpersonationStart($event->impersonator, $event->impersonated);
         });
 
         Event::listen(LeaveImpersonation::class, function (LeaveImpersonation $event) {
@@ -73,7 +77,9 @@ class AppServiceProvider extends ServiceProvider
                 'timestamp' => now()->toISOString(),
             ]);
 
-            // TODO: Sprint 4 - Store in audit log database table
+            // FUTURE: Store impersonation events in audit_logs database table
+            // Currently logging to Laravel log only. To enable DB storage:
+            // app(AuditService::class)->logImpersonationEnd($event->impersonator, $event->impersonated);
         });
     }
 }

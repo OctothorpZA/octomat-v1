@@ -54,6 +54,8 @@ import { cn } from '@/lib/utils';
 import { dashboard } from '@/routes';
 import { type NavItem, type SharedData } from '@/types';
 
+// Merged from navigation-sidebar - Sprint 5 cleanup complete
+
 import AppLogo from './app-logo';
 
 interface NavigationItem {
